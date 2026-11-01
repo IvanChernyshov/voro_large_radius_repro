@@ -38,3 +38,33 @@ jobs:
           name: measurements-${{ matrix.platform.tag }}-${{ matrix.profile }}
           path: output/
           if-no-files-found: warn
+
+  windows-msvc:
+    name: "windows-msvc-o2 / ${{ matrix.profile }}"
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [baseline, candidate]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure MSVC x64 developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Environment information
+        shell: pwsh
+        run: |
+          Write-Host "OS: $([System.Environment]::OSVersion.VersionString)"
+          Get-Command cl.exe | Select-Object -ExpandProperty Source
+          Write-Host "MSVC environment: $env:VSCMD_VER"
+      - name: Compile and execute original native MSVC checks
+        shell: pwsh
+        run: ./scripts/run-msvc.ps1 -Mode "${{ matrix.profile }}"
+      - name: Save MSVC measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: measurements-windows-msvc-o2-${{ matrix.profile }}
+          path: output/
+          if-no-files-found: warn
