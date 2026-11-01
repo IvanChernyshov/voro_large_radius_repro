@@ -60,6 +60,21 @@ The original may preserve the *total* domain measure while assigning incorrect i
 
 The local test source was uploaded to GitHub using **identical Git blob SHA-1 IDs**, not reconstructed by hand with potentially different inputs.
 
+## Independent GitHub Actions verification
+
+[Workflow run 41315343597](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41315343597) tested the *committed* sources and test code at `400b245f583478d1787389f52ede3030ac20f6ef`. At the time of recording, **12 of 15 jobs had completed successfully**, with the remaining three macOS arm64 jobs **queued** and therefore not claimed as verified.
+
+| Toolchain | Original 2D / 3D mismatches | Candidate-01 2D / 3D mismatches | Candidate-02 2D / 3D mismatches | Controls |
+|---|---|---|---|---|
+| Linux GCC `-O2` | 72 / 188 | 72 / 180 | **0 / 0** | All pass |
+| Linux Clang `-O3` | 72 / 188 | 72 / 180 | **0 / 0** | All pass |
+| macOS Clang `-O2` | 72 / 188 | 72 / 180 | **0 / 0** | All pass |
+| Windows x64 MSVC `/O2` | 72 / 188 | 72 / 180 | **0 / 0** | All pass |
+
+Each completed job executed 168 native A8 cases in 2D and 420 in 3D, in addition to the existing A1–A7 suite. The original and candidate-01 profiles are **diagnostic**, not acceptance passes; success means the reference/control infrastructure worked and discrepancies were faithfully recorded. Candidate-02 requires every A8 case to pass.
+
+These are observed results for the defined finite test matrix, not a statistical failure rate or evidence of universal correctness.
+
 ## Running and interpreting results
 
 ```bash
