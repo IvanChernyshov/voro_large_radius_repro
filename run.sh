@@ -131,3 +131,31 @@ for dim in 2 3; do
     echo "A6-A7 ${dim}D: original large-radius failures recorded (informational)."
   fi
 done
+
+# Stage 6 (A8): unequal-radius multi-site geometry in rectangular and
+# dedicated periodic containers. References: analytic 1D inequalities
+# (rectangular), and exhaustive unpruned periodic image clipping (3D).
+# Original Voro++ and candidate-01 discrepancies are diagnostic.
+# Candidate-02 is required to match these selected independent references.
+for dim in 2 3; do
+  if [[ "$dim" == 2 ]]; then
+    VORO_INC="$VORO/2d/src"
+  else
+    VORO_INC="$VORO/src"
+  fi
+  "$CXX" $CXXFLAGS -I"$VORO_INC" \
+    "$ROOT/repro/unequal${dim}d.cpp" "$BUILD/voro${dim}d.o" -o "$BUILD/unequal${dim}d"
+  logfile="$OUTPUT/${dim}d_unequal.txt"
+  rc=0
+  "$BUILD/unequal${dim}d" > "$logfile" 2>&1 || rc=$?
+  grep '^SUMMARY A8' "$logfile"
+  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-02 && "$rc" -ne 0 ]]; then
+    grep 'status=FAIL' "$logfile" | head -40 >&2 || true
+    grep -E "^(ORACLE_|SUMMARY A8)" "$logfile" >&2 || true
+    echo "A8 ${dim}D control/oracle/candidate-02 failure (exit=$rc)" >&2
+    exit 1
+  fi
+  if [[ "$rc" -eq 1 ]]; then
+    echo "A8 ${dim}D: discrepancies recorded for ${MODE} (informational)."
+  fi
+done

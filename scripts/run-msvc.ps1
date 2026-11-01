@@ -60,7 +60,7 @@ try {
         $Obj[$Dim]=Join-Path $Build "voro$($Dim)d.obj"
         Compile -Options @("/nologo","/EHsc","/O2","/std:c++14",
             "/I$($Inc[$Dim])","/c","/Fo$($Obj[$Dim])","/Tp$Source")
-        foreach($Stem in @("repro","arithmetic","locate","coverage")) {
+        foreach($Stem in @("repro","arithmetic","locate","coverage","unequal")) {
             $Name="$($Stem)$($Dim)d"
             $Driver=Join-Path $Root "repro/$Name.cpp"
             $Exe=Join-Path $Build "$Name.exe"
@@ -122,6 +122,20 @@ try {
             throw "A6-A7 control/candidate failure, exit $Code"
         }
         if($Code -eq 1) {Write-Host "A6-A7 $($Dim)D original failures recorded."}
+    }
+    # A8: unequal-radius cases. Original/candidate-01 errors are evidence;
+    # candidate-02 is required to satisfy all selected references.
+    foreach($Dim in @(2,3)) {
+        $Log=Join-Path $Output "$($Dim)d_unequal.txt"
+        $Code=RunNative -Name "unequal$($Dim)d" -Params @() -Log $Log
+        Show -Log $Log -Pattern "^SUMMARY A8"
+        if($Code -notin @(0,1) -or ($Mode -eq "candidate-02" -and $Code -ne 0)) {
+            Get-Content -LiteralPath $Log |
+                Where-Object {$_ -match "status=FAIL|ORACLE_|SUMMARY A8"} |
+                Select-Object -First 40 | ForEach-Object {Write-Host $_}
+            throw "A8 $($Dim)D control/oracle/candidate-02 failure, exit $Code"
+        }
+        if($Code -eq 1) {Write-Host "A8 $($Dim)D numerical differences recorded."}
     }
     Write-Host "MSVC run completed. Diagnostic failures are NOT accepted geometry."
 } finally {
