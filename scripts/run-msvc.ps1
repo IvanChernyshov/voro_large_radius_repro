@@ -1,6 +1,6 @@
 # Standalone MSVC harness for the pinned Voro++ reproduction study.
 # Requires a Visual Studio Developer Command Prompt / Developer PowerShell.
-param([ValidateSet("baseline","candidate","candidate-02")][string]$Mode="baseline")
+param([ValidateSet("baseline","candidate","candidate-02","candidate-03")][string]$Mode="baseline")
 Set-StrictMode -Version Latest
 $ErrorActionPreference="Stop"
 $Root=(Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -39,7 +39,7 @@ try {
         Copy-Item -LiteralPath $Original -Destination $Voro -Recurse -Force
         Push-Location $Voro
         try {
-            $PatchFile=if($Mode -eq "candidate-02") {"candidate-02.patch"}else{"candidate-01.patch"}
+            $PatchFile=if($Mode -eq "candidate-02") {"candidate-02.patch"}elseif($Mode -eq "candidate-03") {"candidate-03.patch"}else{"candidate-01.patch"}
             $Patch=Join-Path $Root "patches/$PatchFile"
             & git.exe apply --check $Patch
             if($LASTEXITCODE -ne 0) {throw "Candidate patch failed preflight."}
@@ -60,7 +60,7 @@ try {
         $Obj[$Dim]=Join-Path $Build "voro$($Dim)d.obj"
         Compile -Options @("/nologo","/EHsc","/O2","/std:c++14",
             "/I$($Inc[$Dim])","/c","/Fo$($Obj[$Dim])","/Tp$Source")
-        foreach($Stem in @("repro","arithmetic","locate","coverage","unequal","stress")) {
+        foreach($Stem in @("repro","arithmetic","locate","coverage","unequal","stress","owner")) {
             $Name="$($Stem)$($Dim)d"
             $Driver=Join-Path $Root "repro/$Name.cpp"
             $Exe=Join-Path $Build "$Name.exe"
@@ -86,7 +86,7 @@ try {
             $Outcome=if($Code -eq 0) {"PASS"}else{"FAIL"}
             Write-Host "$Mode $($Dim)D $Label : $Outcome"
             if($Code -eq 1) {
-                if($Mode -eq "baseline" -and $Label -in @("extreme","multiblock")) {
+                if($Mode -in @("baseline","candidate-03") -and $Label -in @("extreme","multiblock")) {
                     ++$KnownFailures
                 } else {++$RequiredFailures}
             }
@@ -110,12 +110,15 @@ try {
         $Code=RunNative -Name "locate$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^(SCENARIO |SUMMARY )"
         if($Code -notin @(0,1)) {throw "A4-A5 control/oracle failure, exit $Code"}
-        if($Code -eq 1) {Write-Host "A4-A5 $($Dim)D differences recorded."}
+        if($Code -eq 1) {
+            if($Mode -eq "candidate-03") {throw "Candidate-03 must pass A4-A5 in $($Dim)D"}
+            Write-Host "A4-A5 $($Dim)D differences recorded."
+        }
 
         $Log=Join-Path $Output "$($Dim)d_coverage.txt"
         $Code=RunNative -Name "coverage$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^SUMMARY A6_A7"
-        if($Code -notin @(0,1) -or ($Mode -ne "baseline" -and $Code -ne 0)) {
+        if($Code -notin @(0,1) -or ($Mode -in @("candidate","candidate-02") -and $Code -ne 0)) {
             Get-Content -LiteralPath $Log |
                 Where-Object {$_ -match "status=FAIL"} |
                 Select-Object -First 30 | ForEach-Object {Write-Host $_}
@@ -149,6 +152,20 @@ try {
             throw "A9 $($Dim)D oracle/control/candidate-02 failure, exit $Code"
         }
         if($Code -eq 1) {Write-Host "A9 $($Dim)D numerical differences recorded."}
+    }
+    # A10: reference nearest-power-site plus returned periodic image.
+    # Original and geometry-only candidates retain informative errors.
+    foreach($Dim in @(2,3)) {
+        $Log=Join-Path $Output "$($Dim)d_owner.txt"
+        $Code=RunNative -Name "owner$($Dim)d" -Params @() -Log $Log
+        Show -Log $Log -Pattern "^SUMMARY A10"
+        if($Code -notin @(0,1) -or ($Mode -eq "candidate-03" -and $Code -ne 0)) {
+            Get-Content -LiteralPath $Log |
+                Where-Object {$_ -match "WRONG|ORACLE_|SUMMARY A10"} |
+                Select-Object -First 40 | ForEach-Object {Write-Host $_}
+            throw "A10 $($Dim)D control/oracle/candidate-03 failure, exit $Code"
+        }
+        if($Code -eq 1) {Write-Host "A10 $($Dim)D numerical differences recorded."}
     }
     Write-Host "MSVC run completed. Diagnostic failures are NOT accepted geometry."
 } finally {

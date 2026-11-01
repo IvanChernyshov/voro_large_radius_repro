@@ -3,8 +3,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="${1:-baseline}"
-if [[ "$MODE" != baseline && "$MODE" != candidate && "$MODE" != candidate-02 ]]; then
-  echo "Usage: bash ./run.sh [baseline|candidate|candidate-02]" >&2
+if [[ "$MODE" != baseline && "$MODE" != candidate && "$MODE" != candidate-02 && "$MODE" != candidate-03 ]]; then
+  echo "Usage: bash ./run.sh [baseline|candidate|candidate-02|candidate-03]" >&2
   exit 2
 fi
 ORIGINAL="$ROOT/vendor/voro"
@@ -17,6 +17,7 @@ if [[ "$MODE" != baseline ]]; then
   cp -R "$ORIGINAL" "$TMP/voro"
   PATCH_FILE="$ROOT/patches/candidate-01.patch"
   if [[ "$MODE" == candidate-02 ]]; then PATCH_FILE="$ROOT/patches/candidate-02.patch"; fi
+  if [[ "$MODE" == candidate-03 ]]; then PATCH_FILE="$ROOT/patches/candidate-03.patch"; fi
   (cd "$TMP/voro" && patch --batch --forward -p1 < "$PATCH_FILE")
   VORO="$TMP/voro"
 fi
@@ -44,15 +45,15 @@ for dim in 2 3; do
       outcome="FAIL"
     fi
     echo "${MODE} ${dim}D ${label} : ${outcome}"
-    if [[ "$MODE" != baseline || "$label" == small || "$label" == moderate || "$label" == threshold || "$label" == rescaled ]]; then
+    if [[ "$MODE" == candidate || "$MODE" == candidate-02 || "$label" == small || "$label" == moderate || "$label" == threshold || "$label" == rescaled ]]; then
       if [[ "$outcome" == FAIL ]]; then violations=$((violations+1)); fi
     elif [[ "$outcome" == FAIL ]]; then
       known_failures=$((known_failures+1))
     fi
   done
 done
-if [[ "$MODE" == baseline ]]; then
-  echo "Original Voro++: $known_failures failing extreme configurations observed (informational)."
+if [[ "$MODE" == baseline || "$MODE" == candidate-03 ]]; then
+  echo "$MODE: $known_failures known cell-construction failures recorded (informational)."
 fi
 echo "Required checks failed: $violations"
 if [[ "$violations" != 0 ]]; then exit 1; fi
@@ -104,6 +105,10 @@ for dim in 2 3; do
     exit "$rc"
   fi
   if [[ "$rc" -eq 1 ]]; then
+    if [[ "$MODE" == candidate-03 ]]; then
+      echo "Candidate-03 must pass A4-A5 location tests." >&2
+      exit 1
+    fi
     echo "Locate ${dim}D: numerical failures recorded in $logfile (informational)."
   fi
 done
@@ -122,7 +127,7 @@ for dim in 2 3; do
   rc=0
   "$BUILD/coverage${dim}d" > "$logfile" 2>&1 || rc=$?
   grep '^SUMMARY A6_A7' "$logfile"
-  if [[ "$rc" -gt 1 ]] || [[ "$MODE" != baseline && "$rc" -ne 0 ]]; then
+  if [[ "$rc" -gt 1 ]] || [[ ( "$MODE" == candidate || "$MODE" == candidate-02 ) && "$rc" -ne 0 ]]; then
     grep 'status=FAIL' "$logfile" | head -50 >&2 || true
     echo "A6-A7 ${dim}D control/candidate failure: exit=$rc" >&2
     exit "$rc"
@@ -179,5 +184,26 @@ for dim in 2 3; do
   fi
   if [[ "$rc" -eq 1 ]]; then
     echo "A9 ${dim}D: ${MODE} numerical discrepancies recorded (informational)."
+  fi
+done
+
+# Stage 8 (A10): exhaustive, shifted-power nearest-site oracle in
+# 2D/3D, including periodic-image coordinates, masks, skew lattice,
+# insertion orders and spatial block grids. Only candidate-03 must pass.
+for dim in 2 3; do
+  if [[ "$dim" == 2 ]]; then VORO_INC="$VORO/2d/src"; else VORO_INC="$VORO/src"; fi
+  "$CXX" $CXXFLAGS -I"$VORO_INC" \
+    "$ROOT/repro/owner${dim}d.cpp" "$BUILD/voro${dim}d.o" -o "$BUILD/owner${dim}d"
+  logfile="$OUTPUT/${dim}d_owner.txt"
+  rc=0
+  "$BUILD/owner${dim}d" > "$logfile" 2>&1 || rc=$?
+  grep "^SUMMARY A10" "$logfile"
+  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-03 && "$rc" -ne 0 ]]; then
+    grep -E "^(WRONG|ORACLE_|SUMMARY A10)" "$logfile" | head -50 >&2 || true
+    echo "A10 ${dim}D oracle/control/candidate-03 failure (exit=$rc)" >&2
+    exit 1
+  fi
+  if [[ "$rc" -eq 1 ]]; then
+    echo "A10 ${dim}D: known owner-query errors in ${MODE} (informational)."
   fi
 done
