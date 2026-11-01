@@ -50,3 +50,29 @@ if [[ "$MODE" == baseline ]]; then
 fi
 echo "Required checks failed: $violations"
 if [[ "$violations" != 0 ]]; then exit 1; fi
+
+# Focused arithmetic regression probes (A1-A3). In this research phase their
+# failures are observed evidence, not a reason to mark the workflow successful
+# results as geometrically correct. A program error / invalid oracle remains fatal.
+for dim in 2 3; do
+  if [[ "$dim" == 2 ]]; then
+    VORO_INC="$VORO/2d/src"
+    VORO_UNIT="$VORO/2d/src/voro++_2d.cc"
+  else
+    VORO_INC="$VORO/src"
+    VORO_UNIT="$VORO/src/voro++.cc"
+  fi
+  "$CXX" $CXXFLAGS -I"$VORO_INC" \
+    "$ROOT/repro/arithmetic${dim}d.cpp" "$VORO_UNIT" -o "$BUILD/arithmetic${dim}d"
+  logfile="$OUTPUT/${dim}d_arithmetic.txt"
+  rc=0
+  "$BUILD/arithmetic${dim}d" > "$logfile" 2>&1 || rc=$?
+  cat "$logfile"
+  if [[ "$rc" -gt 1 ]]; then
+    echo "Arithmetic probe ${dim}D terminated unexpectedly with status $rc" >&2
+    exit "$rc"
+  fi
+  if [[ "$rc" -eq 1 ]]; then
+    echo "Arithmetic probe ${dim}D: numerical differences recorded (informational)."
+  fi
+done
