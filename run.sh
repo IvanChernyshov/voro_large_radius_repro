@@ -207,3 +207,40 @@ for dim in 2 3; do
     echo "A10 ${dim}D: known owner-query errors in ${MODE} (informational)."
   fi
 done
+
+# Stage 9 A11: extreme finite radii, external periodic queries, and near ties.
+# Only the search-specific candidate-03 must pass supported nonnegative inputs.
+# Negative radii and score margins <=1e-12 remain diagnostics.
+for dim in 2 3; do
+  if [[ "$dim" == 2 ]]; then VORO_INC="$VORO/2d/src"; else VORO_INC="$VORO/src"; fi
+  "$CXX" $CXXFLAGS -I"$VORO_INC" \
+    "$ROOT/repro/extreme${dim}d.cpp" "$BUILD/voro${dim}d.o" -o "$BUILD/extreme${dim}d"
+  logfile="$OUTPUT/${dim}d_extreme.txt"
+  rc=0
+  "$BUILD/extreme${dim}d" > "$logfile" 2>&1 || rc=$?
+  grep "^SUMMARY A11" "$logfile"
+  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-03 && "$rc" -ne 0 ]]; then
+    grep -E "^(ORACLE_|MISMATCH|SUMMARY A11)" "$logfile" | head -40 >&2 || true
+    echo "A11 ${dim}D fatal oracle or candidate-03 search failure (exit=$rc)" >&2
+    exit 1
+  fi
+  if [[ "$rc" -eq 1 ]]; then echo "A11 ${dim}D: known owner-query failures in ${MODE}."; fi
+done
+
+# Stage 9 A12: equal-radius cell measure at extreme exponents.
+# 1e308 is diagnostic even for candidate-02; supported exponent checks
+# are enforced for candidate-02, not for the untouched search-only patch.
+for dim in 2 3; do
+  if [[ "$dim" == 2 ]]; then VORO_INC="$VORO/2d/src"; else VORO_INC="$VORO/src"; fi
+  "$CXX" $CXXFLAGS -I"$VORO_INC" \
+    "$ROOT/repro/exponent${dim}d.cpp" "$BUILD/voro${dim}d.o" -o "$BUILD/exponent${dim}d"
+  logfile="$OUTPUT/${dim}d_exponent.txt"
+  rc=0
+  "$BUILD/exponent${dim}d" > "$logfile" 2>&1 || rc=$?
+  grep "^SUMMARY A12" "$logfile"
+  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-02 && "$rc" -ne 0 ]]; then
+    grep -E "^(CASE A12|SUMMARY A12)" "$logfile" | tail -20 >&2 || true
+    echo "A12 ${dim}D supported-range geometry failure (exit=$rc)" >&2
+    exit 1
+  fi
+done

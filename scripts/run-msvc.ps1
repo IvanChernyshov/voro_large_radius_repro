@@ -60,7 +60,7 @@ try {
         $Obj[$Dim]=Join-Path $Build "voro$($Dim)d.obj"
         Compile -Options @("/nologo","/EHsc","/O2","/std:c++14",
             "/I$($Inc[$Dim])","/c","/Fo$($Obj[$Dim])","/Tp$Source")
-        foreach($Stem in @("repro","arithmetic","locate","coverage","unequal","stress","owner")) {
+        foreach($Stem in @("repro","arithmetic","locate","coverage","unequal","stress","owner","extreme","exponent")) {
             $Name="$($Stem)$($Dim)d"
             $Driver=Join-Path $Root "repro/$Name.cpp"
             $Exe=Join-Path $Build "$Name.exe"
@@ -166,6 +166,32 @@ try {
             throw "A10 $($Dim)D control/oracle/candidate-03 failure, exit $Code"
         }
         if($Code -eq 1) {Write-Host "A10 $($Dim)D numerical differences recorded."}
+    }
+    # A11: owner search with high exponents, external periodic queries,
+    # negative radii (diagnostic), and excluded near-tie decisions.
+    foreach($Dim in @(2,3)) {
+        $Log=Join-Path $Output "$($Dim)d_extreme.txt"
+        $Code=RunNative -Name "extreme$($Dim)d" -Params @() -Log $Log
+        Show -Log $Log -Pattern "^SUMMARY A11"
+        if($Code -notin @(0,1) -or ($Mode -eq "candidate-03" -and $Code -ne 0)) {
+            Get-Content -LiteralPath $Log |
+                Where-Object {$_ -match "ORACLE_|MISMATCH|SUMMARY A11"} |
+                Select-Object -First 30 | ForEach-Object {Write-Host $_}
+            throw "A11 $($Dim)D invalid oracle or candidate-03 search failure, exit $Code"
+        }
+        if($Code -eq 1) {Write-Host "A11 $($Dim)D known search errors recorded."}
+    }
+    # A12: the 1e308 construction regime is diagnostic, even on candidate-02.
+    foreach($Dim in @(2,3)) {
+        $Log=Join-Path $Output "$($Dim)d_exponent.txt"
+        $Code=RunNative -Name "exponent$($Dim)d" -Params @() -Log $Log
+        Show -Log $Log -Pattern "^SUMMARY A12"
+        if($Code -notin @(0,1) -or ($Mode -eq "candidate-02" -and $Code -ne 0)) {
+            Get-Content -LiteralPath $Log |
+                Where-Object {$_ -match "CASE A12|SUMMARY A12"} |
+                Select-Object -Last 15 | ForEach-Object {Write-Host $_}
+            throw "A12 $($Dim)D required geometry failure, exit $Code"
+        }
     }
     Write-Host "MSVC run completed. Diagnostic failures are NOT accepted geometry."
 } finally {

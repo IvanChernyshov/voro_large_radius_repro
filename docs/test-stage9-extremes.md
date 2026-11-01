@@ -1,0 +1,66 @@
+# Stage 9 — A11/A12 extreme exponents, domain remapping, signed radii and near ties
+
+**Status:** focused exploration of candidate-03's stated input domain and the known limits of candidate-02's plane arithmetic. This stage does not change any numerical implementation or the original Voro++ sources. The tests intentionally distinguish *required passes* from *diagnostic, not-yet-supported cases*.
+
+## A11 — Native `find_voronoi_cell()` at extreme radius scales
+
+The two new C++11 files `repro/extreme2d.cpp` and `repro/extreme3d.cpp` exercise **the actual public native API**, with an independently enumerated exact-algebra reference from the original binary64 radius inputs. Their acceptance subset covers nonnegative radii; negative radii are tested separately and **do not count as passing** even when the CI job is green.
+
+Inputs include:
+
+- Radius pairs with equal positive radii `1`, `1e8`, `1e154`, `1e200` and `1e308`.
+- Pairs with an adjacent binary64 successor of `1e8`, `1e150`, or `1e308`.
+- High-contrast `(0,R)` and `(R,0)` cases, with `R` at `1e8` and `1e150`, plus small-radius controls.
+- Four **negative-radius diagnostic pairs** including two equal negative radii, all-negative unequal radii, and mixed signs.
+- In 2D, all four rectangular periodicity masks. In 3D, all eight rectangular masks and the orthogonal/skew dedicated periodic containers.
+- Spatial block grids 1, 2 and 4 per axis, both site insertion orders and query points inside and *outside* the primary domain (e.g. `x=-2.1, 2.3`). Queries outside a nonperiodic axis must return false; for periodic axes, the **returned image position**, not only particle ID, must be correct.
+
+The reference checks the 5- and 6-image enumeration ranges for agreement. For numerical stability across GCC/Clang's extended `long double` and MSVC's binary64 `long double`, it evaluates the radius-gap term with `R=max(|ri|)` and a special case when `|ri|=R`:
+
+```cpp
+radius_gap = (abs(r) == R) ? 0 : (R-abs(r))*(R+abs(r));
+```
+
+This avoids constructing `0 * infinity` in the reference when `r=1e308`. A nonmaximal radius can legitimately have an infinite *representable* gap at this scale; the maximal-radius site then remains the unique finite-score owner in these bounded test geometries. The test excludes requests within `1e-12` of a reference score tie from mandatory correctness and reports such queries separately.
+
+### Local results (GCC `-O2` and Clang `-O3`, Linux x86-64)
+
+| Test subset | 2D | 3D |
+|---|---:|---:|
+| Nonnegative-radius required owner comparisons under candidate-03 | **0 errors / 20,958** | **0 / 58,296** |
+| Outside-fundamental-domain queries (all radii, including diagnostics) | 0 incorrect / 12,096 | 0 / 34,128 |
+| Negative-radius diagnostic comparisons | **1,184 incorrect / 6,300** | **3,176 / 16,968** |
+| Nonzero but exceptionally small score-margin probes (diagnostic) | 0 incorrect / 1,764 | 7 / 42 |
+
+In the seven 3D near-tie discrepancies, the nominal reference margin is only about `5.57e-18` and the difference concerns a query in a skew periodic lattice. That margin is far below a robust binary64 comparison at the tested geometric scale. Exact ties are also counted but never asserted as unique-winner queries. **Neither category should be presented as a demonstrated algorithmic defect at an unambiguous point.**
+
+The principal negative-radius counterexample is `r0=r1=-1e8` with sites `x=0.25, 0.75` in a unit domain. The exact power diagram is identical to the equal-positive-radius diagram, but candidate-03 may choose the wrong site depending on insertion order and block geometry. This follows from the original `max_radius` tracking the largest *signed* radius (initially zero) while the proposed shifted-score proof assumes `0 <= ri <= R`. It is **not** fixed by the combined patch.
+
+Whether negative radii should be supported by a Voro++ API is a separate maintainer-contract question. This report does **not** assume that accepting a raw `double` parameter establishes a promise of negative physical sphere radii.
+
+## A12 — Power-cell construction at extreme finite radius exponents
+
+Two separate native C++ files `repro/exponent2d.cpp` and `repro/exponent3d.cpp` create **two equal-radius sites** at `x=0.25,0.75` in a unit nonperiodic domain, for 1, 2 and 4 blocks along each axis. The correct cells have individual measure 0.5, x-extents `[0,0.5]` and `[0.5,1]`, and sum 1.
+
+| Radius | Construction under candidate-02 and experimental combined patch |
+|---:|---|
+| `1e8` | Correct |
+| `1e154` | Correct |
+| `1e200` | Correct |
+| `1e308` | **Fails**: 2D `NaN` areas; 3D reports both cells empty |
+
+The `1e308` case is deliberately **informational**, and its failures remain visible in every log. Although the input radius is finite, its square is **not** representable in binary64. A factored radius difference can still be evaluated correctly for equal radii, but `ri+rj` itself overflows before multiplication, giving `0*Inf = NaN`. The result is therefore a *different* failure regime from the earlier moderate-weight cancellation at `R=1e8`.
+
+For profiles that repair construction, the three smaller exponents are **required** to pass. The highest exponent is recorded, not suppressed or called fixed.
+
+## Current acceptance semantics
+
+Run the original and existing independent candidate profiles with `bash ./run.sh <profile>` or `./scripts/run-msvc.ps1 -Mode <profile>`. A11 nonnegative queries are required for **candidate-03** and the planned combined profile; failures on other source versions are diagnostic. Negative-radius and sub-`1e-12` near-tie errors are always recorded separately. A12 requires the smaller exponents for candidate-02 and the planned combined profile; `1e308` failures are informational for all variants.
+
+The same independent per-cell and per-owner checks used by A1–A10 remain in place. None of this constitutes an all-finite-double guarantee.
+
+## Next step
+
+After Stage 9 is reproducible in CI, add a **separate non-cumulative combined profile** applying both candidate-02 and candidate-03 to a fresh original-source copy. Require all established A1–A10 acceptance checks and A11's nonnegative and A12's supported exponent subsets, retaining the negative-radius and `1e308` failures explicitly as unresolved.
+
+No Voro++ issue or PR has been submitted; root README revision remains deferred.
