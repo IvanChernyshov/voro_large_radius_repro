@@ -24,8 +24,12 @@ BUILD="$ROOT/build/$MODE"
 OUTPUT="$ROOT/output/$MODE"
 mkdir -p "$BUILD" "$OUTPUT"
 echo "mode=$MODE compiler=$CXX flags=$CXXFLAGS"
-"$CXX" $CXXFLAGS -I"$VORO/2d/src" "$ROOT/repro/repro2d.cpp" "$VORO/2d/src/voro++_2d.cc" -o "$BUILD/repro2d"
-"$CXX" $CXXFLAGS -I"$VORO/src" "$ROOT/repro/repro3d.cpp" "$VORO/src/voro++.cc" -o "$BUILD/repro3d"
+# Compile each native Voro++ translation unit once, then link each harness.
+# This keeps the growing regression suite fast without changing the source.
+"$CXX" $CXXFLAGS -I"$VORO/2d/src" -c "$VORO/2d/src/voro++_2d.cc" -o "$BUILD/voro2d.o"
+"$CXX" $CXXFLAGS -I"$VORO/src" -c "$VORO/src/voro++.cc" -o "$BUILD/voro3d.o"
+"$CXX" $CXXFLAGS -I"$VORO/2d/src" "$ROOT/repro/repro2d.cpp" "$BUILD/voro2d.o" -o "$BUILD/repro2d"
+"$CXX" $CXXFLAGS -I"$VORO/src" "$ROOT/repro/repro3d.cpp" "$BUILD/voro3d.o" -o "$BUILD/repro3d"
 violations=0
 known_failures=0
 for dim in 2 3; do
@@ -57,13 +61,11 @@ if [[ "$violations" != 0 ]]; then exit 1; fi
 for dim in 2 3; do
   if [[ "$dim" == 2 ]]; then
     VORO_INC="$VORO/2d/src"
-    VORO_UNIT="$VORO/2d/src/voro++_2d.cc"
   else
     VORO_INC="$VORO/src"
-    VORO_UNIT="$VORO/src/voro++.cc"
   fi
   "$CXX" $CXXFLAGS -I"$VORO_INC" \
-    "$ROOT/repro/arithmetic${dim}d.cpp" "$VORO_UNIT" -o "$BUILD/arithmetic${dim}d"
+    "$ROOT/repro/arithmetic${dim}d.cpp" "$BUILD/voro${dim}d.o" -o "$BUILD/arithmetic${dim}d"
   logfile="$OUTPUT/${dim}d_arithmetic.txt"
   rc=0
   "$BUILD/arithmetic${dim}d" > "$logfile" 2>&1 || rc=$?
@@ -81,13 +83,11 @@ done
 for dim in 2 3; do
   if [[ "$dim" == 2 ]]; then
     VORO_INC="$VORO/2d/src"
-    VORO_UNIT="$VORO/2d/src/voro++_2d.cc"
   else
     VORO_INC="$VORO/src"
-    VORO_UNIT="$VORO/src/voro++.cc"
   fi
   "$CXX" $CXXFLAGS -I"$VORO_INC" \
-    "$ROOT/repro/locate${dim}d.cpp" "$VORO_UNIT" -o "$BUILD/locate${dim}d"
+    "$ROOT/repro/locate${dim}d.cpp" "$BUILD/voro${dim}d.o" -o "$BUILD/locate${dim}d"
   logfile="$OUTPUT/${dim}d_location.txt"
   rc=0
   "$BUILD/locate${dim}d" > "$logfile" 2>&1 || rc=$?
@@ -99,5 +99,29 @@ for dim in 2 3; do
   fi
   if [[ "$rc" -eq 1 ]]; then
     echo "Locate ${dim}D: numerical failures recorded in $logfile (informational)."
+  fi
+done
+# Stage 3 A6-A7: rectangular periodic flags and orthogonal/skew periodic cells.
+# Strong small-radius and ordinary Voronoi controls; large-radius disagreements
+# in the original source are expected diagnostic evidence.
+for dim in 2 3; do
+  if [[ "$dim" == 2 ]]; then
+    VORO_INC="$VORO/2d/src"
+  else
+    VORO_INC="$VORO/src"
+  fi
+  "$CXX" $CXXFLAGS -I"$VORO_INC" \
+    "$ROOT/repro/coverage${dim}d.cpp" "$BUILD/voro${dim}d.o" -o "$BUILD/coverage${dim}d"
+  logfile="$OUTPUT/${dim}d_coverage.txt"
+  rc=0
+  "$BUILD/coverage${dim}d" > "$logfile" 2>&1 || rc=$?
+  grep '^SUMMARY A6_A7' "$logfile"
+  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate && "$rc" -ne 0 ]]; then
+    grep 'status=FAIL' "$logfile" | head -50 >&2 || true
+    echo "A6-A7 ${dim}D control/candidate failure: exit=$rc" >&2
+    exit "$rc"
+  fi
+  if [[ "$rc" -eq 1 ]]; then
+    echo "A6-A7 ${dim}D: original large-radius failures recorded (informational)."
   fi
 done
