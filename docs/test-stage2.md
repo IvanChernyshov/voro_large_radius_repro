@@ -47,6 +47,18 @@ With the pinned original arithmetic and the existing `candidate-01` patch, local
 
 For example, with one block and forward insertion order, the original equal-large-radius query `x=0.74` returns site 0 (at `0.25`) rather than site 1 (at `0.75`). Reversing insertion order makes the first candidate effectively win for other queries. Block count also changes the erroneous results. The near-equal-large case gets site 0 at `x=4.8`, even though site 1 is the unique correct power owner because the exact boundary is at `4.751647313435872`.
 
+### Independently observed GitHub Actions results
+
+The first [Stage 2 workflow run](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41299881690) reports a small but genuine **compiler/platform dependence** in the failure count. For both 2D and 3D, in both the original and candidate-01 profiles:
+
+| CI configuration | A4 large-equal incorrect / 36 | A5 adjacent incorrect / 54 | Total incorrect / 162 |
+|---|---:|---:|---:|
+| Ubuntu, GCC `-O2` | 8 | 12 | 20 |
+| Ubuntu, Clang `-O3` | 8 | 13 | 21 |
+| macOS, Clang `-O2` | 8 | 12 | 20 |
+
+All the standard and small-radius controls passed. The macOS arm64 jobs were still queued at the time this record was written, so **no result for that configuration is asserted here**. The exact number of wrong owners is not an invariant: the supported conclusion is that the fault reproduces across all completed configurations, while the precise failure pattern varies with compilation.
+
 The unchanged results with `candidate-01` are expected because that patch affects `r_scale()` for plane construction, not the `r_current_sub()` / `r_max_add()` arithmetic used by the location search. These tests do **not** evaluate or approve the proposed search arithmetic fix.
 
 ## Commands and failure semantics
