@@ -58,6 +58,23 @@ Each failure count describes the number of **configurations** with at least one 
 
 The two test source files were uploaded under Git blob SHA-1s matching the locally compiled files exactly: `stress2d.cpp` = `7d2a9d1f66a4f2b8da8083c1b8ffba80399b50ed`; `stress3d.cpp` = `8c12e141bce992086e883383e881105784f0bd40`.
 
+## Independent GitHub Actions results
+
+The exact GitHub-committed test sources were executed in [workflow run 41316575492](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41316575492) at commit `191d552f8b5f0598e6683ba0abf1c4186ba60fa9`. **12 of 15 jobs completed successfully**, covering all three source profiles on the four environments below. Three macOS arm64 jobs remained queued at this point; their results are not claimed.
+
+| Platform / compiler | Original wrong 2D / 3D | Candidate-01 wrong 2D / 3D | Candidate-02 wrong 2D / 3D |
+|---|---|---|---|
+| Ubuntu, GCC `-O2` | 232 / 644 | 168 / 476 | **0 / 0** |
+| Ubuntu, Clang `-O3` | 232 / 646 | 168 / 472 | **0 / 0** |
+| macOS, Clang `-O2` | 232 / 644 | 168 / 476 | **0 / 0** |
+| Windows x64, MSVC `/O2` | 232 / 646 | 168 / 472 | **0 / 0** |
+
+All moderate-radius positive controls passed, and the independently checked reference volumes and image-range convergence were valid. Each 2D fraction has denominator 384 configurations and each 3D fraction denominator 960 configurations, per profile and platform.
+
+The precise **number of erroneous 3D configurations varies slightly with compiler and platform**. These are observed diagnostic failures, not a stable expected count or failure rate; do not tighten baseline acceptance around any fixed number. The candidate-02 result is the stricter check: any mismatch fails that profile.
+
+A green original/candidate-01 job means the harness built and recorded the failures; it does **not** mean the corresponding Voro++ geometry passed. Output logs are preserved in workflow artifacts.
+
 ## How to run and interpret
 
 ```bash
