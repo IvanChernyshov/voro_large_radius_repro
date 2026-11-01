@@ -193,6 +193,25 @@ try {
             throw "A12 $($Dim)D required geometry failure, exit $Code"
         }
     }
+    # Stage 11. Optional, scope-only scalar diagnostics: NOT a pass/fail gate.
+    foreach($Dim in @(2,3)) {
+        $Name="radius_bounds$($Dim)d"
+        $Source=Join-Path $Root "repro/radius_bounds.cpp"
+        $Exe=Join-Path $Build "$Name.exe"
+        $Log=Join-Path $Output "$($Dim)d_pruning_scope.txt"
+        $BuildLog=Join-Path $Output "$($Dim)d_pruning_build.txt"
+        $CompileArgs=@("/nologo","/EHsc","/O2","/std:c++14",
+                "/I$($Inc[$Dim])",$Source,"/Fe$Exe")
+        if($Dim -eq 2) { $CompileArgs+= "/DAUDIT_2D" }
+        try {
+            Compile -Options $CompileArgs *> $BuildLog
+            $Code=RunNative -Name $Name -Params @() -Log $Log
+            if($Code -eq 0) {Show -Log $Log -Pattern "^SUMMARY radius_poly"}
+            else {Write-Warning "Scope-only $($Dim)D diagnostic exit $Code; not an acceptance gate."}
+        } catch {
+            Write-Warning "Scope-only $($Dim)D probe was unavailable: $_"
+        }
+    }
     Write-Host "MSVC run completed. Diagnostic failures are NOT accepted geometry."
 } finally {
     if($null -ne $TempRoot -and (Test-Path -LiteralPath $TempRoot)) {

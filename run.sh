@@ -245,3 +245,30 @@ for dim in 2 3; do
     exit 1
   fi
 done
+
+# Stage 11: scope-only numerical observations for r_ctest / r_prime / r_cutoff.
+# These probes describe arithmetic limits, including excluded input regimes.
+# They NEVER change the candidate acceptance result, even on a mismatch.
+for dim in 2 3; do
+  if [[ "$dim" == 2 ]]; then
+    VORO_INC="$VORO/2d/src"
+    FLAGS=(-DAUDIT_2D)
+  else
+    VORO_INC="$VORO/src"
+    FLAGS=()
+  fi
+  logfile="$OUTPUT/${dim}d_pruning_scope.txt"
+  if "$CXX" $CXXFLAGS "${FLAGS[@]}" -I"$VORO_INC" \
+    "$ROOT/repro/radius_bounds.cpp" -o "$BUILD/radius_bounds${dim}d" > "$OUTPUT/${dim}d_pruning_build.txt" 2>&1; then
+    rc=0
+    "$BUILD/radius_bounds${dim}d" > "$logfile" 2>&1 || rc=$?
+    if [[ "$rc" == 0 ]]; then
+      grep "^SUMMARY radius_poly" "$logfile" || true
+    else
+      echo "Scope-only ${dim}D probe exited with $rc (not an acceptance gate)." >&2
+    fi
+  else
+    echo "Scope-only ${dim}D probe compilation failed (not an acceptance gate)." >&2
+    tail -15 "$OUTPUT/${dim}d_pruning_build.txt" >&2 || true
+  fi
+done
