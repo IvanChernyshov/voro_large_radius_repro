@@ -1,0 +1,40 @@
+name: Native Voro++ large-radius reproducer
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  reproduce:
+    name: "${{ matrix.platform.tag }} / ${{ matrix.profile }}"
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [baseline, candidate]
+        platform:
+          - {os: ubuntu-latest, tag: linux-gcc-o2, cxx: g++, flags: "-O2 -std=c++11"}
+          - {os: ubuntu-latest, tag: linux-clang-o3, cxx: clang++, flags: "-O3 -std=c++11"}
+          - {os: macos-15, tag: macos-clang-o2, cxx: clang++, flags: "-O2 -std=c++11"}
+          - {os: macos-15-arm64, tag: macos-arm64-clang-o3, cxx: clang++, flags: "-O3 -std=c++11"}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Environment and compiler
+        shell: bash
+        run: |
+          uname -a
+          ${{ matrix.platform.cxx }} --version
+      - name: Compile and execute native tests
+        shell: bash
+        env:
+          CXX: ${{ matrix.platform.cxx }}
+          CXXFLAGS: ${{ matrix.platform.flags }}
+        run: bash ./run.sh "${{ matrix.profile }}"
+      - name: Save native measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: measurements-${{ matrix.platform.tag }}-${{ matrix.profile }}
+          path: output/
+          if-no-files-found: warn

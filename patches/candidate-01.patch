@@ -1,0 +1,24 @@
+--- a/src/rad_option.hh
++++ b/src/rad_option.hh
+@@ -137,7 +137,8 @@
+ 		 * \param[in] q the index of the particle within the block.
+ 		 * \return The scaled plane displacement. */
+ 		inline double r_scale(double rs,int ijk,int q) {
+-			return rs+r_rad-ppr[ijk][4*q+3]*ppr[ijk][4*q+3];
++			double rj=ppr[ijk][4*q+3];
++			return rs+(r_rad-rj*rj);
+ 		}
+ 		/** Scales a plane displacement prior to use in the plane
+ 		 * cutting algorithm, and also checks if it could possibly cut
+--- a/2d/src/rad_option.hh
++++ b/2d/src/rad_option.hh
+@@ -135,7 +135,8 @@
+ 		 * \param[in] q the index of the particle within the block.
+ 		 * \return The scaled plane displacement. */
+ 		inline double r_scale(double rs,int ijk,int q) {
+-			return rs+r_rad-ppr[ijk][3*q+2]*ppr[ijk][3*q+2];
++			double rj=ppr[ijk][3*q+2];
++			return rs+(r_rad-rj*rj);
+ 		}
+ 		/** Scales a plane displacement prior to use in the plane
+ 		 * cutting algorithm, and also checks if it could possibly cut
