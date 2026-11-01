@@ -60,7 +60,7 @@ try {
         $Obj[$Dim]=Join-Path $Build "voro$($Dim)d.obj"
         Compile -Options @("/nologo","/EHsc","/O2","/std:c++14",
             "/I$($Inc[$Dim])","/c","/Fo$($Obj[$Dim])","/Tp$Source")
-        foreach($Stem in @("repro","arithmetic","locate","coverage","unequal")) {
+        foreach($Stem in @("repro","arithmetic","locate","coverage","unequal","stress")) {
             $Name="$($Stem)$($Dim)d"
             $Driver=Join-Path $Root "repro/$Name.cpp"
             $Exe=Join-Path $Build "$Name.exe"
@@ -136,6 +136,19 @@ try {
             throw "A8 $($Dim)D control/oracle/candidate-02 failure, exit $Code"
         }
         if($Code -eq 1) {Write-Host "A8 $($Dim)D numerical differences recorded."}
+    }
+    # A9: noncollinear stress. Only candidate-02 must be discrepancy-free.
+    foreach($Dim in @(2,3)) {
+        $Log=Join-Path $Output "$($Dim)d_stress.txt"
+        $Code=RunNative -Name "stress$($Dim)d" -Params @() -Log $Log
+        Show -Log $Log -Pattern "^SUMMARY A9"
+        if($Code -notin @(0,1) -or ($Mode -eq "candidate-02" -and $Code -ne 0)) {
+            Get-Content -LiteralPath $Log |
+                Where-Object {$_ -match "FAIL_CASE|ORACLE_|SUMMARY A9"} |
+                Select-Object -First 45 | ForEach-Object {Write-Host $_}
+            throw "A9 $($Dim)D oracle/control/candidate-02 failure, exit $Code"
+        }
+        if($Code -eq 1) {Write-Host "A9 $($Dim)D numerical differences recorded."}
     }
     Write-Host "MSVC run completed. Diagnostic failures are NOT accepted geometry."
 } finally {

@@ -159,3 +159,25 @@ for dim in 2 3; do
     echo "A8 ${dim}D: discrepancies recorded for ${MODE} (informational)."
   fi
 done
+
+# Stage 7 (A9): non-collinear/noncoplanar deterministic stress tests.
+# 2D: long-double polygon reference independent of the Voro++ clipper.
+# 3D: exhaustive direct-plane clipping without radius_poly or block pruning.
+# Original/candidate-01 mismatches are diagnostic; candidate-02 must pass.
+for dim in 2 3; do
+  if [[ "$dim" == 2 ]]; then VORO_INC="$VORO/2d/src"; else VORO_INC="$VORO/src"; fi
+  "$CXX" $CXXFLAGS -I"$VORO_INC" \
+    "$ROOT/repro/stress${dim}d.cpp" "$BUILD/voro${dim}d.o" -o "$BUILD/stress${dim}d"
+  logfile="$OUTPUT/${dim}d_stress.txt"
+  rc=0
+  "$BUILD/stress${dim}d" > "$logfile" 2>&1 || rc=$?
+  grep "^SUMMARY A9" "$logfile"
+  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-02 && "$rc" -ne 0 ]]; then
+    grep -E "^(FAIL_CASE|ORACLE_|SUMMARY A9)" "$logfile" | head -55 >&2 || true
+    echo "A9 ${dim}D oracle/control/candidate-02 failure (exit=$rc)" >&2
+    exit 1
+  fi
+  if [[ "$rc" -eq 1 ]]; then
+    echo "A9 ${dim}D: ${MODE} numerical discrepancies recorded (informational)."
+  fi
+done
