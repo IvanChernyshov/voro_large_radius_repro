@@ -125,3 +125,6 @@ try {
         Remove-Item -LiteralPath $TempRoot -Recurse -Force
     }
 }
+# PowerShell's caller otherwise inherits the last expected native exit 1.
+# Real failures throw above and never reach this point.
+exit 0
