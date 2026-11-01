@@ -3,8 +3,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="${1:-baseline}"
-if [[ "$MODE" != baseline && "$MODE" != candidate ]]; then
-  echo "Usage: bash ./run.sh [baseline|candidate]" >&2
+if [[ "$MODE" != baseline && "$MODE" != candidate && "$MODE" != candidate-02 ]]; then
+  echo "Usage: bash ./run.sh [baseline|candidate|candidate-02]" >&2
   exit 2
 fi
 ORIGINAL="$ROOT/vendor/voro"
@@ -12,10 +12,12 @@ VORO="$ORIGINAL"
 TMP=""
 cleanup() { if [[ -n "$TMP" ]]; then rm -rf "$TMP"; fi; }
 trap cleanup EXIT
-if [[ "$MODE" == candidate ]]; then
+if [[ "$MODE" != baseline ]]; then
   TMP="$(mktemp -d)"
   cp -R "$ORIGINAL" "$TMP/voro"
-  (cd "$TMP/voro" && patch --batch --forward -p1 < "$ROOT/patches/candidate-01.patch")
+  PATCH_FILE="$ROOT/patches/candidate-01.patch"
+  if [[ "$MODE" == candidate-02 ]]; then PATCH_FILE="$ROOT/patches/candidate-02.patch"; fi
+  (cd "$TMP/voro" && patch --batch --forward -p1 < "$PATCH_FILE")
   VORO="$TMP/voro"
 fi
 CXX="${CXX:-c++}"
@@ -42,7 +44,7 @@ for dim in 2 3; do
       outcome="FAIL"
     fi
     echo "${MODE} ${dim}D ${label} : ${outcome}"
-    if [[ "$MODE" == candidate || "$label" == small || "$label" == moderate || "$label" == threshold || "$label" == rescaled ]]; then
+    if [[ "$MODE" != baseline || "$label" == small || "$label" == moderate || "$label" == threshold || "$label" == rescaled ]]; then
       if [[ "$outcome" == FAIL ]]; then violations=$((violations+1)); fi
     elif [[ "$outcome" == FAIL ]]; then
       known_failures=$((known_failures+1))
@@ -75,6 +77,10 @@ for dim in 2 3; do
     exit "$rc"
   fi
   if [[ "$rc" -eq 1 ]]; then
+    if [[ "$MODE" == candidate-02 ]]; then
+      echo "Arithmetic probe ${dim}D: candidate-02 must pass A1-A3." >&2
+      exit 1
+    fi
     echo "Arithmetic probe ${dim}D: numerical differences recorded (informational)."
   fi
 done
@@ -116,7 +122,7 @@ for dim in 2 3; do
   rc=0
   "$BUILD/coverage${dim}d" > "$logfile" 2>&1 || rc=$?
   grep '^SUMMARY A6_A7' "$logfile"
-  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate && "$rc" -ne 0 ]]; then
+  if [[ "$rc" -gt 1 ]] || [[ "$MODE" != baseline && "$rc" -ne 0 ]]; then
     grep 'status=FAIL' "$logfile" | head -50 >&2 || true
     echo "A6-A7 ${dim}D control/candidate failure: exit=$rc" >&2
     exit "$rc"

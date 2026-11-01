@@ -1,6 +1,6 @@
 # Standalone MSVC harness for the pinned Voro++ reproduction study.
 # Requires a Visual Studio Developer Command Prompt / Developer PowerShell.
-param([ValidateSet("baseline","candidate")][string]$Mode="baseline")
+param([ValidateSet("baseline","candidate","candidate-02")][string]$Mode="baseline")
 Set-StrictMode -Version Latest
 $ErrorActionPreference="Stop"
 $Root=(Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -31,7 +31,7 @@ function Show([string]$Log,[string]$Pattern) {
 
 $TempRoot=$null
 try {
-    if($Mode -eq "candidate") {
+    if($Mode -ne "baseline") {
         $TempRoot=Join-Path ([IO.Path]::GetTempPath()) ("voro-msvc-"+[guid]::NewGuid().ToString("N"))
         [IO.Directory]::CreateDirectory($TempRoot) | Out-Null
         $Original=$Voro
@@ -39,7 +39,8 @@ try {
         Copy-Item -LiteralPath $Original -Destination $Voro -Recurse -Force
         Push-Location $Voro
         try {
-            $Patch=Join-Path $Root "patches/candidate-01.patch"
+            $PatchFile=if($Mode -eq "candidate-02") {"candidate-02.patch"}else{"candidate-01.patch"}
+            $Patch=Join-Path $Root "patches/$PatchFile"
             & git.exe apply --check $Patch
             if($LASTEXITCODE -ne 0) {throw "Candidate patch failed preflight."}
             & git.exe apply $Patch
@@ -100,7 +101,10 @@ try {
         $Code=RunNative -Name "arithmetic$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^(CASE |SUMMARY )"
         if($Code -notin @(0,1)) {throw "A1-A3 abnormal exit $Code"}
-        if($Code -eq 1) {Write-Host "A1-A3 $($Dim)D differences recorded."}
+        if($Code -eq 1) {
+            if($Mode -eq "candidate-02") {throw "Candidate-02 must pass A1-A3: dimension $Dim"}
+            Write-Host "A1-A3 $($Dim)D differences recorded."
+        }
 
         $Log=Join-Path $Output "$($Dim)d_location.txt"
         $Code=RunNative -Name "locate$($Dim)d" -Params @() -Log $Log
@@ -111,7 +115,7 @@ try {
         $Log=Join-Path $Output "$($Dim)d_coverage.txt"
         $Code=RunNative -Name "coverage$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^SUMMARY A6_A7"
-        if($Code -notin @(0,1) -or ($Mode -eq "candidate" -and $Code -ne 0)) {
+        if($Code -notin @(0,1) -or ($Mode -ne "baseline" -and $Code -ne 0)) {
             Get-Content -LiteralPath $Log |
                 Where-Object {$_ -match "status=FAIL"} |
                 Select-Object -First 30 | ForEach-Object {Write-Host $_}

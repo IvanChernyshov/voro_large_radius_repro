@@ -1,0 +1,72 @@
+--- a/src/rad_option.hh
++++ b/src/rad_option.hh
+@@ -97,7 +97,7 @@
+ 		 * \param[in] s the index of the particle within the block. */
+ 		inline void r_init(int ijk,int s) {
+ 			double &r=ppr[ijk][4*s+3];
+-			r_rad=r*r;
++			r_current=r;
+ 			r_mul=(r-max_radius)*(r+max_radius);
+ 		}
+ 		/** Sets a required constant to be used when carrying out a
+@@ -137,7 +137,8 @@
+ 		 * \param[in] q the index of the particle within the block.
+ 		 * \return The scaled plane displacement. */
+ 		inline double r_scale(double rs,int ijk,int q) {
+-			return rs+r_rad-ppr[ijk][4*q+3]*ppr[ijk][4*q+3];
++			const double rj=ppr[ijk][4*q+3];
++			return rs+(r_current-rj)*(r_current+rj);
+ 		}
+ 		/** Scales a plane displacement prior to use in the plane
+ 		 * cutting algorithm, and also checks if it could possibly cut
+@@ -151,11 +152,12 @@
+ 		 * otherwise. */
+ 		inline bool r_scale_check(double &rs,double mrs,int ijk,int q) {
+ 			double trs=rs;
+-			rs+=r_rad-ppr[ijk][4*q+3]*ppr[ijk][4*q+3];
++			const double rj=ppr[ijk][4*q+3];
++			rs+=(r_current-rj)*(r_current+rj);
+ 			return rs<=0||rs*rs<mrs*trs;
+ 		}
+ 	private:
+-		double r_rad,r_mul,r_val;
++		double r_current,r_mul,r_val;
+ };
+ 
+ }
+--- a/2d/src/rad_option.hh
++++ b/2d/src/rad_option.hh
+@@ -95,7 +95,7 @@
+ 		 * \param[in] s the index of the particle within the block. */
+ 		inline void r_init(int ijk,int s) {
+ 			double &r=ppr[ijk][3*s+2];
+-			r_rad=r*r;
++			r_current=r;
+ 			r_mul=(r-max_radius)*(r+max_radius);
+ 		}
+ 		/** Sets a required constant to be used when carrying out a
+@@ -135,7 +135,8 @@
+ 		 * \param[in] q the index of the particle within the block.
+ 		 * \return The scaled plane displacement. */
+ 		inline double r_scale(double rs,int ijk,int q) {
+-			return rs+r_rad-ppr[ijk][3*q+2]*ppr[ijk][3*q+2];
++			const double rj=ppr[ijk][3*q+2];
++			return rs+(r_current-rj)*(r_current+rj);
+ 		}
+ 		/** Scales a plane displacement prior to use in the plane
+ 		 * cutting algorithm, and also checks if it could possibly cut
+@@ -149,11 +150,12 @@
+ 		 * otherwise. */
+ 		inline bool r_scale_check(double &rs,double mrs,int ijk,int q) {
+ 			double trs=rs;
+-			rs+=r_rad-ppr[ijk][3*q+2]*ppr[ijk][3*q+2];
++			const double rj=ppr[ijk][3*q+2];
++			rs+=(r_current-rj)*(r_current+rj);
+ 			return rs<=0||rs*rs<mrs*trs;
+         }
+ 	private:
+-		double r_rad,r_mul,r_val;
++		double r_current,r_mul,r_val;
+ };
+ 
+ }
