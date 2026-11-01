@@ -57,13 +57,13 @@ try {
             $Source=Join-Path $Voro "src/voro++.cc"
         }
         $Obj[$Dim]=Join-Path $Build "voro$($Dim)d.obj"
-        Compile -Options @("/nologo","/TP","/EHsc","/O2","/std:c++14",
-            "/I$($Inc[$Dim])","/c","/Fo$($Obj[$Dim])",$Source)
+        Compile -Options @("/nologo","/EHsc","/O2","/std:c++14",
+            "/I$($Inc[$Dim])","/c","/Fo$($Obj[$Dim])","/Tp$Source")
         foreach($Stem in @("repro","arithmetic","locate","coverage")) {
             $Name="$($Stem)$($Dim)d"
             $Driver=Join-Path $Root "repro/$Name.cpp"
             $Exe=Join-Path $Build "$Name.exe"
-            Compile -Options @("/nologo","/TP","/EHsc","/O2","/std:c++14",
+            Compile -Options @("/nologo","/EHsc","/O2","/std:c++14",
                 "/I$($Inc[$Dim])",$Driver,$Obj[$Dim],"/Fe$Exe")
         }
     }
