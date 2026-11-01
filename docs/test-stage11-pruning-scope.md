@@ -69,6 +69,14 @@ Each profile records:
 
 MSVC executes the same source with the appropriate dimension macro. **A scalar mismatch, nonfinite result or diagnostic build failure does not change the main CI acceptance result.** A diagnostic probe runs independently from all previously established test gates; its purpose is to retain and compare observed numerical behavior, not certify a new supported range.
 
+## Cross-platform CI confirmation
+
+[GitHub Actions run 41328535563](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41328535563) tested commit `82fdfd79c1fb3bf0d2412d480f0076a3603c01b7`. At the time of this record, **20 of 25 jobs completed successfully** with **no failures**: all five source profiles (`baseline`, `candidate`, `candidate-02`, `candidate-03`, `combined-02-03`) on Linux GCC, Linux Clang, macOS Clang and Windows x64 MSVC. The five macOS arm64 jobs were queued, so their outcome remains unverified.
+
+In all four completed toolchain configurations the added 2D and 3D scalar diagnostic **compiled and executed**, printing `SUMMARY radius_poly dim=2 category=scope-only no_acceptance_claim=1` and the corresponding 3D line. Detailed probe values are retained as `2d_pruning_scope.txt` and `3d_pruning_scope.txt` within each profile's CI output artifacts.
+
+The new diagnostic is deliberately not a requirement to pass or a reason to alter a candidate. Previously required A1–A12 gates were unchanged and their completed CI jobs remained successful.
+
 ## 5. Explicit scope policy for this and previous stages
 
 The same interpretation applies to the **negative-radius tests, extremely large exponent tests and near-tie tests in Stages 9–10**:
