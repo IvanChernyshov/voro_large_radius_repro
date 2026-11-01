@@ -1,6 +1,6 @@
 # Standalone MSVC harness for the pinned Voro++ reproduction study.
 # Requires a Visual Studio Developer Command Prompt / Developer PowerShell.
-param([ValidateSet("baseline","candidate","candidate-02","candidate-03")][string]$Mode="baseline")
+param([ValidateSet("baseline","candidate","candidate-02","candidate-03","combined-02-03")][string]$Mode="baseline")
 Set-StrictMode -Version Latest
 $ErrorActionPreference="Stop"
 $Root=(Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -39,7 +39,7 @@ try {
         Copy-Item -LiteralPath $Original -Destination $Voro -Recurse -Force
         Push-Location $Voro
         try {
-            $PatchFile=if($Mode -eq "candidate-02") {"candidate-02.patch"}elseif($Mode -eq "candidate-03") {"candidate-03.patch"}else{"candidate-01.patch"}
+            $PatchFile=if($Mode -eq "candidate-02") {"candidate-02.patch"}elseif($Mode -eq "candidate-03") {"candidate-03.patch"}elseif($Mode -eq "combined-02-03") {"candidate-02-plus-03.patch"}else{"candidate-01.patch"}
             $Patch=Join-Path $Root "patches/$PatchFile"
             & git.exe apply --check $Patch
             if($LASTEXITCODE -ne 0) {throw "Candidate patch failed preflight."}
@@ -102,7 +102,7 @@ try {
         Show -Log $Log -Pattern "^(CASE |SUMMARY )"
         if($Code -notin @(0,1)) {throw "A1-A3 abnormal exit $Code"}
         if($Code -eq 1) {
-            if($Mode -eq "candidate-02") {throw "Candidate-02 must pass A1-A3: dimension $Dim"}
+            if($Mode -in @("candidate-02","combined-02-03")) {throw "Construction arithmetic must pass A1-A3: dimension $Dim"}
             Write-Host "A1-A3 $($Dim)D differences recorded."
         }
 
@@ -111,14 +111,14 @@ try {
         Show -Log $Log -Pattern "^(SCENARIO |SUMMARY )"
         if($Code -notin @(0,1)) {throw "A4-A5 control/oracle failure, exit $Code"}
         if($Code -eq 1) {
-            if($Mode -eq "candidate-03") {throw "Candidate-03 must pass A4-A5 in $($Dim)D"}
+            if($Mode -in @("candidate-03","combined-02-03")) {throw "Search arithmetic must pass A4-A5 in $($Dim)D"}
             Write-Host "A4-A5 $($Dim)D differences recorded."
         }
 
         $Log=Join-Path $Output "$($Dim)d_coverage.txt"
         $Code=RunNative -Name "coverage$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^SUMMARY A6_A7"
-        if($Code -notin @(0,1) -or ($Mode -in @("candidate","candidate-02") -and $Code -ne 0)) {
+        if($Code -notin @(0,1) -or ($Mode -in @("candidate","candidate-02","combined-02-03") -and $Code -ne 0)) {
             Get-Content -LiteralPath $Log |
                 Where-Object {$_ -match "status=FAIL"} |
                 Select-Object -First 30 | ForEach-Object {Write-Host $_}
@@ -132,7 +132,7 @@ try {
         $Log=Join-Path $Output "$($Dim)d_unequal.txt"
         $Code=RunNative -Name "unequal$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^SUMMARY A8"
-        if($Code -notin @(0,1) -or ($Mode -eq "candidate-02" -and $Code -ne 0)) {
+        if($Code -notin @(0,1) -or ($Mode -in @("candidate-02","combined-02-03") -and $Code -ne 0)) {
             Get-Content -LiteralPath $Log |
                 Where-Object {$_ -match "status=FAIL|ORACLE_|SUMMARY A8"} |
                 Select-Object -First 40 | ForEach-Object {Write-Host $_}
@@ -145,7 +145,7 @@ try {
         $Log=Join-Path $Output "$($Dim)d_stress.txt"
         $Code=RunNative -Name "stress$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^SUMMARY A9"
-        if($Code -notin @(0,1) -or ($Mode -eq "candidate-02" -and $Code -ne 0)) {
+        if($Code -notin @(0,1) -or ($Mode -in @("candidate-02","combined-02-03") -and $Code -ne 0)) {
             Get-Content -LiteralPath $Log |
                 Where-Object {$_ -match "FAIL_CASE|ORACLE_|SUMMARY A9"} |
                 Select-Object -First 45 | ForEach-Object {Write-Host $_}
@@ -159,7 +159,7 @@ try {
         $Log=Join-Path $Output "$($Dim)d_owner.txt"
         $Code=RunNative -Name "owner$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^SUMMARY A10"
-        if($Code -notin @(0,1) -or ($Mode -eq "candidate-03" -and $Code -ne 0)) {
+        if($Code -notin @(0,1) -or ($Mode -in @("candidate-03","combined-02-03") -and $Code -ne 0)) {
             Get-Content -LiteralPath $Log |
                 Where-Object {$_ -match "WRONG|ORACLE_|SUMMARY A10"} |
                 Select-Object -First 40 | ForEach-Object {Write-Host $_}
@@ -173,7 +173,7 @@ try {
         $Log=Join-Path $Output "$($Dim)d_extreme.txt"
         $Code=RunNative -Name "extreme$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^SUMMARY A11"
-        if($Code -notin @(0,1) -or ($Mode -eq "candidate-03" -and $Code -ne 0)) {
+        if($Code -notin @(0,1) -or ($Mode -in @("candidate-03","combined-02-03") -and $Code -ne 0)) {
             Get-Content -LiteralPath $Log |
                 Where-Object {$_ -match "ORACLE_|MISMATCH|SUMMARY A11"} |
                 Select-Object -First 30 | ForEach-Object {Write-Host $_}
@@ -186,7 +186,7 @@ try {
         $Log=Join-Path $Output "$($Dim)d_exponent.txt"
         $Code=RunNative -Name "exponent$($Dim)d" -Params @() -Log $Log
         Show -Log $Log -Pattern "^SUMMARY A12"
-        if($Code -notin @(0,1) -or ($Mode -eq "candidate-02" -and $Code -ne 0)) {
+        if($Code -notin @(0,1) -or ($Mode -in @("candidate-02","combined-02-03") -and $Code -ne 0)) {
             Get-Content -LiteralPath $Log |
                 Where-Object {$_ -match "CASE A12|SUMMARY A12"} |
                 Select-Object -Last 15 | ForEach-Object {Write-Host $_}

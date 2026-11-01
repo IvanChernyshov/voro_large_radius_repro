@@ -1,0 +1,138 @@
+--- a/src/rad_option.hh
++++ b/src/rad_option.hh
+@@ -97,7 +97,7 @@
+ 		 * \param[in] s the index of the particle within the block. */
+ 		inline void r_init(int ijk,int s) {
+ 			double &r=ppr[ijk][4*s+3];
+-			r_rad=r*r;
++			r_current=r;
+ 			r_mul=(r-max_radius)*(r+max_radius);
+ 		}
+ 		/** Sets a required constant to be used when carrying out a
+@@ -117,18 +117,23 @@
+ 		 * \param[in] lrs the plane displacement.
+ 		 * \return The scaled value. */
+ 		inline double r_cutoff(double lrs) {return lrs*r_val;}
+-		/** Adds the maximum radius squared to a given value.
+-		 * \param[in] rs the value to consider.
+-		 * \return The value with the radius squared added. */
+-		inline double r_max_add(double rs) {return rs+max_radius*max_radius;}
+-		/** Subtracts the radius squared of a particle from a given
+-		 * value.
+-		 * \param[in] rs the value to consider.
++		/** Converts the current shifted power score to a geometric
++		 * block-distance cutoff. The scores already include the common
++		 * squared-maximum-radius shift; no further shift is required.
++		 * \param[in] rs the current shifted power score.
++		 * \return The geometric squared-distance cutoff. */
++		inline double r_max_add(double rs) {return rs;}
++		/** Computes rs plus the common shift R^2-r^2, where R is
++		 * the maximum nonnegative particle radius. Factoring the
++		 * difference avoids subtracting separately rounded squares.
++		 * \param[in] rs the squared Euclidean distance to the particle.
+ 		 * \param[in] ijk the block that the particle is within.
+ 		 * \param[in] q the index of the particle within the block.
+-		 * \return The value with the radius squared subtracted. */
++		 * \return The shifted power score. */
+ 		inline double r_current_sub(double rs,int ijk,int q) {
+-			return rs-ppr[ijk][4*q+3]*ppr[ijk][4*q+3];
++			const double r=ppr[ijk][4*q+3];
++			if(r==max_radius) return rs;
++			return rs+(max_radius-r)*(max_radius+r);
+ 		}
+ 		/** Scales a plane displacement prior to use in the plane cutting
+ 		 * algorithm.
+@@ -137,7 +142,8 @@
+ 		 * \param[in] q the index of the particle within the block.
+ 		 * \return The scaled plane displacement. */
+ 		inline double r_scale(double rs,int ijk,int q) {
+-			return rs+r_rad-ppr[ijk][4*q+3]*ppr[ijk][4*q+3];
++			const double rj=ppr[ijk][4*q+3];
++			return rs+(r_current-rj)*(r_current+rj);
+ 		}
+ 		/** Scales a plane displacement prior to use in the plane
+ 		 * cutting algorithm, and also checks if it could possibly cut
+@@ -151,11 +157,12 @@
+ 		 * otherwise. */
+ 		inline bool r_scale_check(double &rs,double mrs,int ijk,int q) {
+ 			double trs=rs;
+-			rs+=r_rad-ppr[ijk][4*q+3]*ppr[ijk][4*q+3];
++			const double rj=ppr[ijk][4*q+3];
++			rs+=(r_current-rj)*(r_current+rj);
+ 			return rs<=0||rs*rs<mrs*trs;
+ 		}
+ 	private:
+-		double r_rad,r_mul,r_val;
++		double r_current,r_mul,r_val;
+ };
+ 
+ }
+--- a/2d/src/rad_option.hh
++++ b/2d/src/rad_option.hh
+@@ -95,7 +95,7 @@
+ 		 * \param[in] s the index of the particle within the block. */
+ 		inline void r_init(int ijk,int s) {
+ 			double &r=ppr[ijk][3*s+2];
+-			r_rad=r*r;
++			r_current=r;
+ 			r_mul=(r-max_radius)*(r+max_radius);
+ 		}
+ 		/** Sets a required constant to be used when carrying out a
+@@ -115,18 +115,23 @@
+ 		 * \param[in] lrs the plane displacement.
+ 		 * \return The scaled value. */
+ 		inline double r_cutoff(double lrs) {return lrs*r_val;}
+-		/** Adds the maximum radius squared to a given value.
+-		 * \param[in] rs the value to consider.
+-		 * \return The value with the radius squared added. */
+-		inline double r_max_add(double rs) {return rs+max_radius*max_radius;}
+-		/** Subtracts the radius squared of a particle from a given
+-		 * value.
+-		 * \param[in] rs the value to consider.
++		/** Converts the current shifted power score to a geometric
++		 * block-distance cutoff. The scores already include the common
++		 * squared-maximum-radius shift; no further shift is required.
++		 * \param[in] rs the current shifted power score.
++		 * \return The geometric squared-distance cutoff. */
++		inline double r_max_add(double rs) {return rs;}
++		/** Computes rs plus the common shift R^2-r^2, where R is
++		 * the maximum nonnegative particle radius. Factoring the
++		 * difference avoids subtracting separately rounded squares.
++		 * \param[in] rs the squared Euclidean distance to the particle.
+ 		 * \param[in] ijk the block that the particle is within.
+ 		 * \param[in] q the index of the particle within the block.
+-		 * \return The value with the radius squared subtracted. */
++		 * \return The shifted power score. */
+ 		inline double r_current_sub(double rs,int ijk,int q) {
+-			return rs-ppr[ijk][3*q+2]*ppr[ijk][3*q+2];
++			const double r=ppr[ijk][3*q+2];
++			if(r==max_radius) return rs;
++			return rs+(max_radius-r)*(max_radius+r);
+ 		}
+ 		/** Scales a plane displacement prior to use in the plane cutting
+ 		 * algorithm.
+@@ -135,7 +140,8 @@
+ 		 * \param[in] q the index of the particle within the block.
+ 		 * \return The scaled plane displacement. */
+ 		inline double r_scale(double rs,int ijk,int q) {
+-			return rs+r_rad-ppr[ijk][3*q+2]*ppr[ijk][3*q+2];
++			const double rj=ppr[ijk][3*q+2];
++			return rs+(r_current-rj)*(r_current+rj);
+ 		}
+ 		/** Scales a plane displacement prior to use in the plane
+ 		 * cutting algorithm, and also checks if it could possibly cut
+@@ -149,11 +155,12 @@
+ 		 * otherwise. */
+ 		inline bool r_scale_check(double &rs,double mrs,int ijk,int q) {
+ 			double trs=rs;
+-			rs+=r_rad-ppr[ijk][3*q+2]*ppr[ijk][3*q+2];
++			const double rj=ppr[ijk][3*q+2];
++			rs+=(r_current-rj)*(r_current+rj);
+ 			return rs<=0||rs*rs<mrs*trs;
+         }
+ 	private:
+-		double r_rad,r_mul,r_val;
++		double r_current,r_mul,r_val;
+ };
+ 
+ }

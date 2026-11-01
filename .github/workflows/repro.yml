@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [baseline, candidate, candidate-02, candidate-03]
+        profile: [baseline, candidate, candidate-02, candidate-03, combined-02-03]
         platform:
           - {os: ubuntu-latest, tag: linux-gcc-o2, cxx: g++, flags: "-O2 -std=c++11"}
           - {os: ubuntu-latest, tag: linux-clang-o3, cxx: clang++, flags: "-O3 -std=c++11"}
@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [baseline, candidate, candidate-02, candidate-03]
+        profile: [baseline, candidate, candidate-02, candidate-03, combined-02-03]
     steps:
       - uses: actions/checkout@v4
       - name: Configure MSVC x64 developer environment

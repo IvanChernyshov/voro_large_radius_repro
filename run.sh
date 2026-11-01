@@ -3,8 +3,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="${1:-baseline}"
-if [[ "$MODE" != baseline && "$MODE" != candidate && "$MODE" != candidate-02 && "$MODE" != candidate-03 ]]; then
-  echo "Usage: bash ./run.sh [baseline|candidate|candidate-02|candidate-03]" >&2
+if [[ "$MODE" != baseline && "$MODE" != candidate && "$MODE" != candidate-02 && "$MODE" != candidate-03 && "$MODE" != combined-02-03 ]]; then
+  echo "Usage: bash ./run.sh [baseline|candidate|candidate-02|candidate-03|combined-02-03]" >&2
   exit 2
 fi
 ORIGINAL="$ROOT/vendor/voro"
@@ -18,6 +18,7 @@ if [[ "$MODE" != baseline ]]; then
   PATCH_FILE="$ROOT/patches/candidate-01.patch"
   if [[ "$MODE" == candidate-02 ]]; then PATCH_FILE="$ROOT/patches/candidate-02.patch"; fi
   if [[ "$MODE" == candidate-03 ]]; then PATCH_FILE="$ROOT/patches/candidate-03.patch"; fi
+  if [[ "$MODE" == combined-02-03 ]]; then PATCH_FILE="$ROOT/patches/candidate-02-plus-03.patch"; fi
   (cd "$TMP/voro" && patch --batch --forward -p1 < "$PATCH_FILE")
   VORO="$TMP/voro"
 fi
@@ -45,7 +46,7 @@ for dim in 2 3; do
       outcome="FAIL"
     fi
     echo "${MODE} ${dim}D ${label} : ${outcome}"
-    if [[ "$MODE" == candidate || "$MODE" == candidate-02 || "$label" == small || "$label" == moderate || "$label" == threshold || "$label" == rescaled ]]; then
+    if [[ "$MODE" == candidate || "$MODE" == candidate-02 || "$MODE" == combined-02-03 || "$label" == small || "$label" == moderate || "$label" == threshold || "$label" == rescaled ]]; then
       if [[ "$outcome" == FAIL ]]; then violations=$((violations+1)); fi
     elif [[ "$outcome" == FAIL ]]; then
       known_failures=$((known_failures+1))
@@ -78,8 +79,8 @@ for dim in 2 3; do
     exit "$rc"
   fi
   if [[ "$rc" -eq 1 ]]; then
-    if [[ "$MODE" == candidate-02 ]]; then
-      echo "Arithmetic probe ${dim}D: candidate-02 must pass A1-A3." >&2
+    if [[ "$MODE" == candidate-02 || "$MODE" == combined-02-03 ]]; then
+      echo "Arithmetic probe ${dim}D: construction candidate must pass A1-A3." >&2
       exit 1
     fi
     echo "Arithmetic probe ${dim}D: numerical differences recorded (informational)."
@@ -105,8 +106,8 @@ for dim in 2 3; do
     exit "$rc"
   fi
   if [[ "$rc" -eq 1 ]]; then
-    if [[ "$MODE" == candidate-03 ]]; then
-      echo "Candidate-03 must pass A4-A5 location tests." >&2
+    if [[ "$MODE" == candidate-03 || "$MODE" == combined-02-03 ]]; then
+      echo "Location candidate must pass A4-A5 location tests." >&2
       exit 1
     fi
     echo "Locate ${dim}D: numerical failures recorded in $logfile (informational)."
@@ -127,7 +128,7 @@ for dim in 2 3; do
   rc=0
   "$BUILD/coverage${dim}d" > "$logfile" 2>&1 || rc=$?
   grep '^SUMMARY A6_A7' "$logfile"
-  if [[ "$rc" -gt 1 ]] || [[ ( "$MODE" == candidate || "$MODE" == candidate-02 ) && "$rc" -ne 0 ]]; then
+  if [[ "$rc" -gt 1 ]] || [[ ( "$MODE" == candidate || "$MODE" == candidate-02 || "$MODE" == combined-02-03 ) && "$rc" -ne 0 ]]; then
     grep 'status=FAIL' "$logfile" | head -50 >&2 || true
     echo "A6-A7 ${dim}D control/candidate failure: exit=$rc" >&2
     exit "$rc"
@@ -154,7 +155,7 @@ for dim in 2 3; do
   rc=0
   "$BUILD/unequal${dim}d" > "$logfile" 2>&1 || rc=$?
   grep '^SUMMARY A8' "$logfile"
-  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-02 && "$rc" -ne 0 ]]; then
+  if [[ "$rc" -gt 1 ]] || [[ ( "$MODE" == candidate-02 || "$MODE" == combined-02-03 ) && "$rc" -ne 0 ]]; then
     grep 'status=FAIL' "$logfile" | head -40 >&2 || true
     grep -E "^(ORACLE_|SUMMARY A8)" "$logfile" >&2 || true
     echo "A8 ${dim}D control/oracle/candidate-02 failure (exit=$rc)" >&2
@@ -177,7 +178,7 @@ for dim in 2 3; do
   rc=0
   "$BUILD/stress${dim}d" > "$logfile" 2>&1 || rc=$?
   grep "^SUMMARY A9" "$logfile"
-  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-02 && "$rc" -ne 0 ]]; then
+  if [[ "$rc" -gt 1 ]] || [[ ( "$MODE" == candidate-02 || "$MODE" == combined-02-03 ) && "$rc" -ne 0 ]]; then
     grep -E "^(FAIL_CASE|ORACLE_|SUMMARY A9)" "$logfile" | head -55 >&2 || true
     echo "A9 ${dim}D oracle/control/candidate-02 failure (exit=$rc)" >&2
     exit 1
@@ -198,7 +199,7 @@ for dim in 2 3; do
   rc=0
   "$BUILD/owner${dim}d" > "$logfile" 2>&1 || rc=$?
   grep "^SUMMARY A10" "$logfile"
-  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-03 && "$rc" -ne 0 ]]; then
+  if [[ "$rc" -gt 1 ]] || [[ ( "$MODE" == candidate-03 || "$MODE" == combined-02-03 ) && "$rc" -ne 0 ]]; then
     grep -E "^(WRONG|ORACLE_|SUMMARY A10)" "$logfile" | head -50 >&2 || true
     echo "A10 ${dim}D oracle/control/candidate-03 failure (exit=$rc)" >&2
     exit 1
@@ -219,7 +220,7 @@ for dim in 2 3; do
   rc=0
   "$BUILD/extreme${dim}d" > "$logfile" 2>&1 || rc=$?
   grep "^SUMMARY A11" "$logfile"
-  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-03 && "$rc" -ne 0 ]]; then
+  if [[ "$rc" -gt 1 ]] || [[ ( "$MODE" == candidate-03 || "$MODE" == combined-02-03 ) && "$rc" -ne 0 ]]; then
     grep -E "^(ORACLE_|MISMATCH|SUMMARY A11)" "$logfile" | head -40 >&2 || true
     echo "A11 ${dim}D fatal oracle or candidate-03 search failure (exit=$rc)" >&2
     exit 1
@@ -238,7 +239,7 @@ for dim in 2 3; do
   rc=0
   "$BUILD/exponent${dim}d" > "$logfile" 2>&1 || rc=$?
   grep "^SUMMARY A12" "$logfile"
-  if [[ "$rc" -gt 1 ]] || [[ "$MODE" == candidate-02 && "$rc" -ne 0 ]]; then
+  if [[ "$rc" -gt 1 ]] || [[ ( "$MODE" == candidate-02 || "$MODE" == combined-02-03 ) && "$rc" -ne 0 ]]; then
     grep -E "^(CASE A12|SUMMARY A12)" "$logfile" | tail -20 >&2 || true
     echo "A12 ${dim}D supported-range geometry failure (exit=$rc)" >&2
     exit 1
