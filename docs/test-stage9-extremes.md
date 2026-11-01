@@ -53,6 +53,16 @@ The `1e308` case is deliberately **informational**, and its failures remain visi
 
 For profiles that repair construction, the three smaller exponents are **required** to pass. The highest exponent is recorded, not suppressed or called fixed.
 
+## Independent GitHub Actions confirmation
+
+[Stage 9 workflow run 41322933837](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41322933837) on `34b8d81abfc9dda0d998aa1871bca1fa2a0e9955`: **16 of 20 jobs completed successfully**, including all four profiles on Linux GCC, Linux Clang, macOS Clang and Windows MSVC. The four macOS arm64 jobs were queued and are not counted.
+
+In every completed `candidate-03` job, A11 reports **zero mismatches in 20,958 accepted nonnegative-radius 2D comparisons and 58,296 accepted 3D comparisons**. A11 also reports **zero wrong outside-domain remappings**. Negative-radius diagnostic mismatch counts differ slightly by compiler (e.g. GCC: 1,188 / 6,300 in 2D and 3,192 / 16,968 in 3D; Windows MSVC and Linux Clang: 1,184 and 3,176), so the particular count is not an invariant.
+
+All `candidate-02` jobs report **zero A12 required failures**, together with **three explicitly diagnostic `1e308` geometry failures in 2D and three in 3D**. Candidate-03, which changes only search arithmetic, intentionally preserves the original A12 construction defects.
+
+Near-tie classification also depends on arithmetic precision: in MSVC `long double` is binary64, and some margins that are distinguishable with extended precision instead appear as exact ties. No near-tie decision with gap `<=1e-12` is a mandatory pass condition.
+
 ## Current acceptance semantics
 
 Run the original and existing independent candidate profiles with `bash ./run.sh <profile>` or `./scripts/run-msvc.ps1 -Mode <profile>`. A11 nonnegative queries are required for **candidate-03** and the planned combined profile; failures on other source versions are diagnostic. Negative-radius and sub-`1e-12` near-tie errors are always recorded separately. A12 requires the smaller exponents for candidate-02 and the planned combined profile; `1e308` failures are informational for all variants.
