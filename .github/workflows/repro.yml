@@ -83,6 +83,22 @@ jobs:
             output/dev-combined/*.txt
           if-no-files-found: warn
 
+  dev-openmp:
+    name: "Dev correction / GCC OpenMP concurrency"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Concurrent 2D and 3D cell/owner checks
+        shell: bash
+        run: bash ./scripts/run-dev-openmp.sh
+      - name: Save OpenMP results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-openmp-gcc
+          path: output/dev-openmp/openmp.txt
+          if-no-files-found: warn
+
   reproduce:
     name: "${{ matrix.platform.tag }} / ${{ matrix.profile }}"
     runs-on: ${{ matrix.platform.os }}
