@@ -7,6 +7,8 @@
 #include <iostream>
 #include <limits>
 #include <vector>
+// Promote the exact native binary64 lattice inputs for the reference.
+constexpr double skew_bxy=.23,skew_bxz=-.17,skew_byz=.31;
 struct Site {double x,y,z,r;};
 struct Query {double x,y,z;};
 struct Owner {bool found;int id;long double x,y,z,margin;};
@@ -15,7 +17,9 @@ Owner reference(const Site* ss,Query q,int mask,int K){
   const bool dedicated=mask>=8,skew=mask==9;
   const bool px=dedicated||bool(mask&1),py=dedicated||bool(mask&2),pz=dedicated||bool(mask&4);
   if((!px&&(q.x<0||q.x>=1))||(!py&&(q.y<0||q.y>=1))||(!pz&&(q.z<0||q.z>=1)))return Owner{false,-1,0,0,0,0};
-  const long double bxy=skew?.23L:0,bxz=skew?-.17L:0,byz=skew?.31L:0;
+  const long double bxy=skew?static_cast<long double>(skew_bxy):0,
+       bxz=skew?static_cast<long double>(skew_bxz):0,
+       byz=skew?static_cast<long double>(skew_byz):0;
   const long double R=std::max(std::fabs((long double)ss[0].r),std::fabs((long double)ss[1].r));
   long double best=std::numeric_limits<long double>::infinity(),next=best;
   Owner out={false,-1,0,0,0,0};
@@ -66,7 +70,7 @@ int main(){
     }
     for(int blocks:{1,2,4})for(int reverse=0;reverse<2;++reverse){
       if(dedicated){
-        voro::container_periodic_poly c(1,skew?.23:0,1,skew?-.17:0,skew?.31:0,1,blocks,blocks,blocks,8);
+        voro::container_periodic_poly c(1,skew?skew_bxy:0,1,skew?skew_bxz:0,skew?skew_byz:0,1,blocks,blocks,blocks,8);
         for(int i=0;i<2;++i){int id=reverse?1-i:i;c.put(id,ss[id].x,ss[id].y,ss[id].z,ss[id].r);}
         for(size_t iq=0;iq<qs.size();++iq){
           if(skipped[iq]){

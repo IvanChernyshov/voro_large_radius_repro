@@ -86,7 +86,7 @@ int main(int argc,char** argv) {
     const int blocks=argc>3?std::atoi(argv[3]):1;
     if(!(std::isfinite(r)&&r>=0&&std::isfinite(L)&&L>0&&blocks>=1)) return 2;
     std::cout << std::setprecision(17) << "PARAM dim=2 r=" << r
-              << " L=" << L << " blocks=" << blocks << "\n";
+              << " L=" << L << " pair_blocks=1 periodic_blocks=" << blocks << "\n";
     // Nonperiodic control: mathematically equal radii => ordinary bisector x=L/2.
     container_2d ordinary(0,L,0,L,1,1,false,false,8);
     ordinary.put(0,.25*L,.5*L);ordinary.put(1,.75*L,.5*L);

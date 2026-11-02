@@ -53,16 +53,13 @@ Two numerical expressions are responsible for the demonstrated errors.
 
 ### Constructing power cells
 
-The native `r_scale` path evaluates the plane displacement in the form
-
-```cpp
-rs + r_rad - rj*rj    // r_rad was computed as ri*ri
-```
-
-At `ri = rj = 1e8`, adding a small squared displacement `rs` to
-`1e16` can round away `rs` before the squares cancel. Reordering the
-already-rounded squares fixes this equal-radius case but can still lose
-the difference between nearby radii.
+`r_scale` computes the plane displacement as `(rs + ri*ri) - rj*rj`.
+At `ri = rj = 1e8`, adding the small squared displacement `rs` to
+`1e16` can round away `rs` before the equal squares cancel.
+`r_scale_check` instead evaluates `rs + (ri*ri - rj*rj)`; it does
+not have that same addition-order problem for equal radii. Both paths
+can nevertheless lose differences between *nearby* radii when the
+squares are rounded independently.
 
 The construction correction (candidate-02) retains the unsquared current
 radius and uses the factored difference in `r_scale` and `r_scale_check`:
@@ -88,11 +85,18 @@ s_i(x) = ||x-p_i||² + (R-r_i)*(R+r_i)
        = pi_i(x) + R²                         (in exact arithmetic).
 ```
 
-Every score receives the same shift, preserving the minimizer. Moreover,
+In exact arithmetic the shift preserves the minimizer. Moreover,
 `s_i(x) >= ||x-p_i||²`, so a block's lower bound on squared Euclidean
-distance remains a valid lower bound for owner search. The accompanying
-change makes `r_max_add` an identity: both the score and the pruning
-threshold must use the same convention.
+distance remains valid for owner search. The accompanying change makes
+`r_max_add` an identity to keep scoring and pruning consistent.
+
+This is **not** a floating-point guarantee: a large radius at a remote
+site can make the shifted scores of nearby, small-radius sites round to
+a tie. In a verified three-site counterexample, original Voro++ locates
+the correct site but candidate-03 and the combined patch return the
+wrong one, in 2D and 3D on both branches. See the
+[owner-shift diagnostic](docs/test-stage10-combined.md#global-shift-owner-search-regression)
+and its standalone probe.
 
 ## Experimental patches
 
@@ -135,6 +139,7 @@ polyhedron clipper.
 | A10: owner queries (`dev`) | 36,288/36,288 in 2D; 38,880/38,880 in 3D |
 | Dedicated triclinic cell checks (`dev`) | 40/40, versus 24/40 with original `dev` |
 | Four-thread OpenMP comparison (`dev`) | No mismatches in the tested cell and owner queries |
+| Additional owner-shift probe (both branches) | Original correct; combined owner-search patch gives wrong owner in the counterexample (diagnostic, not a pass claim) |
 
 The full `dev` A9 matrix passes with GCC and Clang on Linux x86-64 and
 with Apple Clang on macOS ARM64 and Intel. The `master` tests also pass
@@ -155,6 +160,7 @@ bash ./run.sh combined-02-03
 bash ./scripts/reproduce-dev.sh extended
 bash ./scripts/run-dev-openmp.sh
 bash ./scripts/probe-dev-triclinic.sh
+bash ./scripts/probe-owner-shift.sh
 ```
 
 The final command records additional diagnostic cases; baseline
@@ -171,6 +177,11 @@ rather than all representable radii and geometries. In particular:
 - The owner-search shift assumes nonnegative radii. Negative-radius
   inputs can give wrong owners with the proposed patch; the supported
   semantics of signed radii have not been established.
+- Even for nonnegative radii, candidate-03 can **introduce** owner-search
+  errors when a remote large-radius site sets the global shift and
+  two smaller-radius sites have distinguishable unshifted scores. The
+  combined patch inherits this regression. Its previously passing A10/A11
+  matrices do not cover this configuration.
 - At `r = 1e308`, finite input radii generate overflowing intermediate
   sums or squares, and the corrected cell construction still fails.
   Tests at `1e8`, `1e154` and `1e200` pass for the specified

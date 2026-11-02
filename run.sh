@@ -86,11 +86,14 @@ for dim in 2 3; do
   for config in "small 1 1 1" "moderate 1000000 1 1" "threshold 10000000 1 1" "extreme 100000000 1 1" "multiblock 100000000 1 2" "rescaled 100000000 100 1"; do
     read -r label r L blocks <<< "$config"
     outfile="$OUTPUT/${dim}d_${label}.txt"
-    if "$BUILD/repro${dim}d" "$r" "$L" "$blocks" > "$outfile" 2>&1; then
-      outcome="PASS"
-    else
-      outcome="FAIL"
+    rc=0
+    "$BUILD/repro${dim}d" "$r" "$L" "$blocks" > "$outfile" 2>&1 || rc=$?
+    if [[ "$rc" -gt 1 ]]; then
+      cat "$outfile" >&2
+      echo "${MODE} ${dim}D ${label}: unexpected process status $rc" >&2
+      exit "$rc"
     fi
+    if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
     echo "${MODE} ${dim}D ${label} : ${outcome}"
     if [[ "$MODE" == candidate || "$MODE" == candidate-02 || "$MODE" == combined-02-03 || "$label" == small || "$label" == moderate || "$label" == threshold || "$label" == rescaled ]]; then
       if [[ "$outcome" == FAIL ]]; then violations=$((violations+1)); fi

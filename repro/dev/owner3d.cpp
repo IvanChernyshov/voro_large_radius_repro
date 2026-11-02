@@ -9,6 +9,8 @@
 #include <limits>
 #include <vector>
 using namespace voro;
+// Use the same binary64 lattice coefficients in native and reference paths.
+constexpr double skew_bxy=2.3,skew_bxz=-1.7,skew_byz=3.1;
 struct Pt{double x,y,z,r;};struct Query{double x,y,z;};
 struct Oracle{int id;double x,y,z,margin;};
 uint32_t step(uint32_t& s){return s=1664525u*s+1013904223u;}
@@ -33,7 +35,9 @@ std::vector<Pt> sites(int seed,int pat){
 Oracle calc(const std::vector<Pt>& ps,int mask,Query q,int K){
  const bool dedicated=mask>=8,skew=mask==9;
  const bool px=dedicated||bool(mask&1),py=dedicated||bool(mask&2),pz=dedicated||bool(mask&4);
- const long double bxy=skew?2.3L:0,bxz=skew?-1.7L:0,byz=skew?3.1L:0;
+ const long double bxy=skew?static_cast<long double>(skew_bxy):0,
+    bxz=skew?static_cast<long double>(skew_bxz):0,
+    byz=skew?static_cast<long double>(skew_byz):0;
  long double R=0;for(const auto& p:ps)R=std::max(R,(long double)p.r);
  long double best=1e300L,second=1e300L;
  Oracle o={-1,0,0,0,0};
@@ -85,7 +89,7 @@ int main(){
      qs.push_back(Query{.61+3.37*i,.51+3.41*j,.71+3.31*k});
    int local_errors=0;
    if(dedicated){
-      container_triclinic_poly c(10,skew?2.3:0,10,skew?-1.7:0,skew?3.1:0,10,blocks,blocks,blocks,8);
+      container_triclinic_poly c(10,skew?skew_bxy:0,10,skew?skew_bxz:0,skew?skew_byz:0,10,blocks,blocks,blocks,8);
       for(int i=0;i<9;++i){int j=rev?8-i:i;c.put(j,pts[j].x,pts[j].y,pts[j].z,pts[j].r);}
       run_queries(c,pts,qs,seed,pat,mask,blocks,rev,errors,controls,queries,skipped,local_errors);
    }else{

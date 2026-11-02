@@ -73,7 +73,33 @@ The six `1e308` failures remain explicitly recorded as diagnostic results.
 
 ### Near ties
 
-A11 excludes winner checks with a reference score gap `<=1e-12`, but still logs them. On extended-precision `long double` toolchains the 3D skew example `query=(-0.1,1.19,-0.1)` produces seven disagreements in 42 nonzero-but-extremely-small-gap diagnostic comparisons, with a reference margin near `5.57e-18`. This is not sufficient evidence of an unambiguous owner-selection defect at binary64 precision. On MSVC, `long double` is binary64, and the corresponding distinctions may round to exact ties; the diagnostic count should not be compared directly between platforms.
+A11 excludes winner checks with a reference score gap `<=1e-12`, but still logs them. The original extended-precision run recorded seven disagreements in 42
+extremely-small-gap diagnostic comparisons for the skew query
+`(-0.1,1.19,-0.1)`. The original reference used decimal `long double`
+lattice coefficients; promoting the same binary64 coefficients passed
+to native gives an exact-input gap about `2.78e-17` instead of the
+old `5.57e-18`. Neither value establishes an unambiguous binary64
+owner-selection defect. On MSVC, `long double` is binary64, and the corresponding distinctions may round to exact ties; the diagnostic count should not be compared directly between platforms.
+
+### Global-shift owner-search regression
+
+For nonnegative radii, candidate-03's global score shift can also
+*introduce* an error. In a nonperiodic box with sites
+`(0.25,0.5)`, `(0.75,0.5)` (both radius zero), and
+`(2e8,0.5)` (radius `1e8`), the unique owner of query
+`(0.75,0.5)` is site 1. Original Voro++ returns 1; the shifted-score
+combined patch returns 0, since `1e16+0.25` and `1e16` both round
+to `1e16` in binary64. The analogous 3D case has the same behavior.
+A scaled case (domain length 3, remote radius 1, near-site separation
+`5e-9`) shows that this is a relative-scale issue, not only a large
+absolute-number issue. Both `master` and `dev` are affected.
+
+`bash ./scripts/probe-owner-shift.sh` records baseline and combined-patch
+outputs for both dimensions and both upstream branches. It is deliberately
+a diagnostic, not an acceptance test requiring the patch to remain wrong.
+A10 and A11 still establish success only for their specified input matrices.
+A generally reliable replacement for the owner-search arithmetic remains
+an open design question.
 
 ### Other numerical boundaries
 
