@@ -1,13 +1,13 @@
 # Stage 4 — Windows x64 / MSVC validation
 
-**Scope:** compiler/platform qualification of the existing native A1–A7 regressions. No geometry modifications, no new arithmetic candidate, and no changes to the pinned original Voro++ source tree.
+This stage checks the existing A1–A7 reproductions on Windows x64 with MSVC, using the pinned Voro++ `master` snapshot.
 
 ## Toolchain and runner
 
 - GitHub Actions: `windows-2022`, x64; Microsoft Visual Studio 2022 Enterprise, MSVC toolset `14.44.35207` (Developer Command Prompt `VSCMD_VER=17.14.43`).
 - Original source: Voro++ `master` commit `b0dac575a47af0f90b5b100e6dc199a493c7cb83`, unchanged inside `vendor/voro/`.
 - Compilation: `cl.exe` with `/O2 /EHsc /std:c++14`; MSVC accepts the project's C++11-level native drivers under this newer language mode.
-- Entrypoint: `scripts/run-msvc.ps1` with `-Mode baseline` or `-Mode candidate`, using PowerShell (`pwsh`). No Python; the Windows build deliberately avoids Git Bash, which can shadow MSVC `link.exe`.
+- Entrypoint: `scripts/run-msvc.ps1` with `-Mode baseline` or `-Mode candidate` in PowerShell (`pwsh`), keeping the MSVC `link.exe` ahead of the Git Bash utility of the same name.
 - MSVC environment comes from `ilammy/msvc-dev-cmd@v1`; source files and the experimental patch are the same as for Linux/macOS. The candidate is applied by `git apply` to a disposable copy outside `vendor/voro/`.
 
 ## Verified Windows CI evidence
@@ -26,7 +26,7 @@
 
 These values match the high-radius failure modes observed with Linux GCC/Clang and macOS Clang, although previous Linux/macOS location runs sometimes reported 20 rather than 21 wrong owners; the exact failure count is compiler/platform dependent.
 
-**Green baseline means that controls passed and expected numerical failures were recorded — not that original Voro++ produced correct geometry.** The C++ A1–A5 tests intentionally return code 1 to report known numerical defects. The Windows wrapper treats this as diagnostic, but treats invalid oracles, control regressions, crashes, bad compilation and failed candidate A6–A7 as fatal. Explicit script exit code 0 after successful validation prevents PowerShell from incorrectly propagating the last *expected* native exit 1.
+The baseline job passes when its controls succeed and the expected numerical discrepancies are recorded. The A1–A5 executables return code 1 for these known defects. The Windows wrapper treats this as diagnostic, but treats invalid oracles, control regressions, crashes, bad compilation and failed candidate A6–A7 as fatal. Explicit script exit code 0 after successful validation prevents PowerShell from incorrectly propagating the last *expected* native exit 1.
 
 ## Local Windows execution
 
@@ -45,12 +45,12 @@ The first Windows job used `/TP` indiscriminately, causing MSVC to interpret a p
 
 A subsequent baseline job compiled and executed all regressions, but GitHub marked the step failed because the PowerShell caller inherited the diagnostic exit code 1 from the last native program. Explicit successful exit status resolved this. Neither infrastructure correction changed any Voro++ source file, test geometry, oracle, or candidate patch.
 
-## Boundaries of this qualification
+## Scope of this Windows test
 
 - This stage adds only **one Windows toolchain/architecture**, not Windows ARM64 or MinGW.
 - A6–A7 tests use **equal radii** and do not certify the handling of unequal large weights.
 - A4–A5 cover only nonperiodic location queries; periodic location/image identity remains a separate test-design task.
-- The candidate patch remains a narrow prototype, not a validated general solution.
-- macOS arm64 jobs are independently queued in GitHub; their eventual status is not inferred from the Windows results.
+- This stage tests candidate-01; the factored construction and owner-search corrections were evaluated later.
+- Cross-platform results for the combined correction are summarized in [Stage 10](test-stage10-combined.md).
 
-**Disposition:** Windows/MSVC compiler coverage is established for the existing regression suite. The next scientific change should be separately tested candidate arithmetic, not further changes to the build harness.
+The Windows runner has continued to exercise the full `master` regression matrix, including the combined patch; see the [current README](../README.md).

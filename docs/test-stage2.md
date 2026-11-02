@@ -1,6 +1,6 @@
 # Stage 2 — independent native location-query checks (A4–A5)
 
-**Status:** Read-only Voro++ source audit plus new C++ regression tests. No fix implemented in this stage. These tests exercise the actual `find_voronoi_cell()` API, independently of the cell-construction path tested in Stage 1.
+This stage tests the native `find_voronoi_cell()` API in Voro++ `master`, independently of the cell-construction errors found in [Stage 1](test-stage1.md). The initial candidate-01 is retained for comparison.
 
 ## Scope
 
@@ -23,7 +23,7 @@ The analytic power bisector for two sites on the x axis with positions `a<b` is
 
 Computing the radius difference *before* squaring is essential for a reliable reference with adjacent large input radii. Here `r1=std::nextafter(1e8,+∞)`, and the code verifies the reference boundary independently of native Voro++ results. Queries are strictly inside the domain and stay at least `1e-4` away from the reference boundary. No tie-breaking behavior is tested.
 
-The actual checks validate the `found` flag, the returned particle ID and the returned site coordinates. There is **no call to Voro++'s `compute_cell()` for the reference result**.
+The actual checks validate the `found` flag, the returned particle ID and the returned site coordinates. The reference result is obtained from the two-site bisector formula, without `compute_cell()`.
 
 Each scenario is tested using:
 
@@ -31,7 +31,7 @@ Each scenario is tested using:
 - both particle insertion orders, retaining stable explicit particle IDs;
 - 6 query coordinates for each A4 scenario, 9 for A5.
 
-That is **162 nonperiodic native location queries per dimension** (324 across 2D and 3D) per source variant. This batch tests only rectangular, nonperiodic location queries; periodic-image owner matching and other container modes are deliberately reserved for later stages.
+That is **162 nonperiodic native location queries per dimension** (324 across 2D and 3D) per source variant. These first owner tests use nonperiodic rectangular domains. The periodic-image cases are covered in [Stage 8](test-stage8-candidate03.md).
 
 ## Verified local observations
 
@@ -57,9 +57,9 @@ The first [Stage 2 workflow run](https://github.com/IvanChernyshov/voro_large_ra
 | Ubuntu, Clang `-O3` | 8 | 13 | 21 |
 | macOS, Clang `-O2` | 8 | 12 | 20 |
 
-All the standard and small-radius controls passed. The macOS arm64 jobs were still queued at the time this record was written, so **no result for that configuration is asserted here**. The exact number of wrong owners is not an invariant: the supported conclusion is that the fault reproduces across all completed configurations, while the precise failure pattern varies with compilation.
+All ordinary and small-radius controls passed on the three toolchains shown. The wrong-owner count varies slightly with compilation settings; the failure itself reproduces on each. The later cross-platform results appear in the [combined validation](test-stage10-combined.md).
 
-The unchanged results with `candidate-01` are expected because that patch affects `r_scale()` for plane construction, not the `r_current_sub()` / `r_max_add()` arithmetic used by the location search. These tests do **not** evaluate or approve the proposed search arithmetic fix.
+The unchanged results with `candidate-01` are expected because that patch affects `r_scale()` for plane construction, not the `r_current_sub()` / `r_max_add()` arithmetic used by the location search. The candidate-01 comparison isolates the search fault because candidate-01 changes only cell construction. Candidate-03 subsequently changes the owner-search arithmetic; see [Stage 8](test-stage8-candidate03.md).
 
 ## Commands and failure semantics
 
@@ -74,6 +74,4 @@ Exit code 0 means all queries matched. Exit 1 means only the known large-radius 
 
 ## Important limitations
 
-This phase establishes **wrong native owner queries**, not the precise internal operation responsible for every observed failure or the safety of any new fix. The source-level interpretation is that large absolute squared radii lead to cancellation in `r_current_sub` and `r_max_add`; causal intervention and the analysis of search-pruning invariants belong to a later candidate-fix stage.
-
-The next project stages are the remaining container/periodicity coverage, a Windows MSVC build, and then independent tests of proposed arithmetic repairs. The root README is not yet promoted to a definitive explanation.
+These tests establish incorrect native owner selection on an analytical two-site geometry. The candidate-03 derivation and periodic-image checks in [Stage 8](test-stage8-candidate03.md) identify the affected `r_current_sub`/`r_max_add` convention and verify the corresponding search correction.

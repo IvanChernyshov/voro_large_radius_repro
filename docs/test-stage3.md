@@ -1,6 +1,6 @@
 # Stage 3 — A6–A7 container and periodicity coverage
 
-**Status:** Test coverage and characterization only. No new numerical fix is implemented or proposed as accepted here. The original pinned Voro++ `master` tree and `candidate-01.patch` remain unchanged.
+This stage extends the original `master` and candidate-01 comparison to rectangular and dedicated periodic containers.
 
 ## Scope and mathematical expectations
 
@@ -23,7 +23,7 @@ In 3D we also test the dedicated `container_periodic` and `container_periodic_po
 
 Both have covolume 1. With one site, the cell must have volume 1. With two sites that differ by half the first lattice vector, translation by that half-vector exchanges the sites, so each must have volume 0.5. With three sites, the sum must equal 1 and inversion symmetry requires the outer two sites to have equal volumes. For this more involved skew geometry, the individual three-site power volumes are additionally compared against **the independently executed ordinary Voronoi container with the same sites**. This is a metamorphic comparison rather than a fully independent exact-arithmetic geometry oracle.
 
-Thus Stage 3 checks both invariant geometry and whether errors persist across container implementations, not whether a computed periodic face has the correct image/shift ID.
+The test covers cell geometry across container implementations. It does not inspect face-neighbor image shifts.
 
 ## Matrix size
 
@@ -36,7 +36,7 @@ Thus Stage 3 checks both invariant geometry and whether errors persist across co
 
 ## Local evidence (Linux x86-64)
 
-Both integrated source profiles were tested locally with GCC `-O2` and Clang `-O3`. The full test runner, including Stages 1–3, returned exit code 0 in all four runs. This indicates that the controls behaved as required and any large-radius differences were explicitly recorded, **not that every test case passed**.
+Both integrated source profiles were tested locally with GCC `-O2` and Clang `-O3`. The full runner completed on both toolchains for both profiles: control cases passed and the original large-radius discrepancies were recorded.
 
 | Source version | 2D failing / 216 | 3D failing / 540 | Small-radius or standard controls failing |
 |---|---:|---:|---:|
@@ -45,7 +45,7 @@ Both integrated source profiles were tested locally with GCC `-O2` and Clang `-O
 
 Every original failure in this matrix occurs with equal radii `10⁸`; the small-radius and ordinary cases pass. For the original, the 2D failures involve 1-, 2- or 3-site partially/fully periodic diagrams and 2-/3-site bounded diagrams. The 3D failures occur in the analogous rectangular masks **and** in the orthogonal and skew dedicated periodic containers. The exact failure count is specific to this deterministic input matrix, not a probability estimate or a universal scale threshold.
 
-The existing `candidate-01` only changes `r_scale()`. Its complete success in these **equal-radius construction** cases does *not* repair the Stage 1 near-equal-radius arithmetic, the Stage 1 `r_scale_check()` decision failure, or the Stage 2 `find_voronoi_cell()` owner errors. Those remain intentionally separate diagnostic tests.
+The existing `candidate-01` only changes `r_scale()`. Its success on this equal-radius construction matrix leaves the adjacent-radius and owner-search errors found in [Stages 1–2](test-stage1.md) unchanged.
 
 ## Run and outputs
 
@@ -60,7 +60,7 @@ The runner treats original large-radius discrepancies as informative (exit 1 fro
 
 To avoid recompiling Voro++ eight times per profile, `run.sh` now builds each original native translation unit once, then links the standalone C++ programs against the corresponding object file. This does not change Voro++ itself.
 
-## What is *not* proved yet
+## Coverage boundaries at this stage
 
 - Numerical correctness for **unequal** or extremely large genuine squared-radius differences.
 - Correct `find_voronoi_cell()` behavior with partial or full periodicity.
@@ -68,4 +68,4 @@ To avoid recompiling Voro++ eight times per profile, `run.sh` now builds each or
 - Absence of errors for arbitrary multi-site geometry, degeneracies, or randomized inputs.
 - Compatibility of the harness with Windows MSVC (not part of this stage).
 
-These gaps form the next test-design decisions. The root README remains a provisional overview until the broader investigation is checked and its explanation has been reviewed in several iterations.
+The unequal-radius geometry and irregular-cell tests followed in [Stages 6–7](test-stage6-unequal.md); periodic owner queries were added in [Stage 8](test-stage8-candidate03.md).

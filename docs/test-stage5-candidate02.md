@@ -1,6 +1,6 @@
 # Stage 5 — candidate-02: factored radius-square difference
 
-**Status:** Independently tested candidate for *plane construction and plane-candidate checks*, not a general repair for all radical/power operations. The original Voro++ tree is unchanged, and candidate-01 remains available for comparison.
+Candidate-02 replaces the plane-displacement arithmetic in `master` with a factored difference of radii. This stage tests the construction path while leaving owner search unchanged.
 
 ## Scope and implementation
 
@@ -28,7 +28,7 @@ return rs <= 0 || rs*rs < mrs*trs;
 
 The old private `r_rad` member is replaced with `r_current`. The existing factored calculation of `r_mul` is **not modified**. Neither `r_ctest`, `r_prime`, `r_cutoff`, `r_current_sub`, nor `r_max_add` is changed.
 
-The mathematical identity is `ri² - rj² = (ri-rj)(ri+rj)`. With nearby binary64 input radii, subtraction of the radii can be exact even when subtracting separately rounded squares loses the meaningful difference. This is a targeted improvement, **not** a general robust-arithmetic guarantee for overflow, underflow, non-finite inputs or all geometric degeneracies.
+The mathematical identity is `ri² - rj² = (ri-rj)(ri+rj)`. With nearby binary64 input radii, subtraction of the radii can be exact even when subtracting separately rounded squares loses the meaningful difference. The factorization improves the tested nearby-radius cases; intermediate overflow and degenerate geometry are separate numerical questions.
 
 ## How to run the three independent versions
 
@@ -72,18 +72,18 @@ For A2, `r0=1e8`, `r1=nextafter(r0,+∞)`, with sites at x=2 and x=8 in a domain
 | macOS / Clang `-O2` | all pass | 0 / 216 | 0 / 540 | 20 / 162 |
 | Windows x64 / MSVC `/O2` | all pass | 0 / 216 | 0 / 540 | 21 / 162 |
 
-The three macOS arm64 tasks were **queued**, not confirmed, when this record was written. Avoid generalizing exact wrong-owner counts across platforms: earlier evidence already showed variation.
+This initial CI table covers the four completed toolchains. The later combined-patch matrix also covers macOS ARM64; see [Stage 10](test-stage10-combined.md). The exact wrong-owner count varies across compilers.
 
 Original Voro++ continues to fail **66 of the 216 2D** and **174 of the 540 3D** A6–A7 cases at radius `1e8`, while candidate-01 and candidate-02 both pass that *equal-radius* geometry matrix. Only candidate-02 also repairs the A2 and A3 arithmetic failures.
 
-## Open issues / acceptance boundary
+## Scope of candidate-02
 
-1. **Owner search is still incorrect:** `r_current_sub` and `r_max_add` are unchanged; A4–A5 intentionally remain failing. A separate candidate-03 is planned for this path, *not* part of this patch.
+1. **Owner search:** `r_current_sub` and `r_max_add` are unchanged; A4–A5 still fail. Candidate-03 was developed separately in [Stage 8](test-stage8-candidate03.md).
 2. **A3 is a direct numerical decision test:** it shows the corrected branch result for a chosen case, but not yet an end-to-end missed-face example attributable exclusively to `r_scale_check`.
 3. **A6–A7 cover equal radii:** they do not independently validate all near-equal and substantially unequal multi-site 2D/3D/periodic geometries.
 4. **No overflow/underflow guarantees:** the factored product can overflow or underflow for other radii even when a mathematical separator is finite. Existing global cutoff/pruning tests are not certified by this stage.
-5. **No changes to Voro++ itself:** the original source is pinned and unmodified; the patch is only an experimental candidate. We are **not preparing or submitting any external issue yet**.
+5. **Source isolation:** the change is distributed as a patch against the pinned original source.
 
-### Next decision
+### Subsequent verification
 
-Do a focused acceptance audit of the new patch (including near-equal/unequal multigenerator geometry and edge cases) before combining any fixes. Preserve the independent candidate-02 result so that later work on location searches does not mask which numerical route was corrected.
+[Stage 6](test-stage6-unequal.md) checks unequal-radius cells, [Stage 7](test-stage7-stress.md) adds irregular multi-site geometry, and [Stage 10](test-stage10-combined.md) tests candidate-02 together with the independent search correction.
