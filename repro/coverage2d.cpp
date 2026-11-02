@@ -1,5 +1,5 @@
-// A6-A7: analytic 2D container, periodicity, grid, and insertion-order tests.
-// Standalone C++11; original Voro++ is unchanged.
+// A6-A7: analytical 2D cell checks across periodicity masks,
+// spatial grids and insertion orders.
 #include <voro++_2d.hh>
 #include <algorithm>
 #include <cmath>

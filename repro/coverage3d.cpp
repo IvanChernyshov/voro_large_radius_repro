@@ -1,5 +1,5 @@
-// A6-A7: 3D rectangular (all periodic masks) and orthogonal/skew periodic
-// containers, block counts and insertion order. Original Voro++ C++11 only.
+// A6-A7: 3D rectangular and dedicated periodic-cell checks,
+// with varying lattices, spatial grids and insertion orders.
 #include <voro++.hh>
 #include <algorithm>
 #include <cmath>

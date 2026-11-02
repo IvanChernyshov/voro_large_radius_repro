@@ -1,4 +1,4 @@
-// Native Voro++ 3D reproducer (C++11). Original master source, no wrappers.
+// 3D cell-construction reproduction for the pinned Voro++ master (C++11).
 #include <voro++.hh>
 #include <algorithm>
 #include <cmath>

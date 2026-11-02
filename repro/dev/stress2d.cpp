@@ -1,6 +1,5 @@
-// Stage 7: non-collinear weighted 2D cells, compared to a standalone
-// long-double convex polygon half-plane clipping reference (no Voro++ oracle).
-// Deterministic test data, C++11, no external dependencies.
+// Dev A9: irregular 2D power cells checked against independent
+// long-double polygon clipping. Deterministic C++11 inputs.
 #include <voro++.hh>
 #include <algorithm>
 #include <cmath>
