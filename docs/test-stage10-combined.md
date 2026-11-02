@@ -1,17 +1,16 @@
 # Stage 10 — independently combined candidate-02 + candidate-03
 
-**Status:** Research candidate with independently verified end-to-end construction **and** location tests over specified finite input matrices. **Not** a universal all-finite-input repair and **not** an issue intended for immediate submission.
+The combined candidate applies the construction and owner-search corrections to the same pinned `master` snapshot. The tests below compare both native operations with independent references on the stated input families.
 
 ## Construction and provenance
 
 The proposed combined patch is `patches/candidate-02-plus-03.patch`. Its complete Git blob SHA-1 is `5ef59e80e642b74a03cde0aa01819e97cded4e28`.
 
-It was produced by:
-
-1. Starting from the pinned, **unmodified** Voro++ `master` snapshot `b0dac575a47af0f90b5b100e6dc199a493c7cb83`.
-2. Applying candidate-02 for the **plane-construction** route: save the current unsquared radius, use a factored difference of squares in `r_scale` and `r_scale_check`.
-3. Applying independent candidate-03 for the **owner-location** route: score each candidate relative to the same maximal nonnegative radius and make `r_max_add` an identity.
-4. Generating one direct unified diff against the **original**, not a cumulative patch requiring the user to apply older candidates.
+It was generated as a single patch directly against `master` commit
+`b0dac575a47af0f90b5b100e6dc199a493c7cb83`. It combines
+candidate-02's factored plane displacement in `r_scale` and
+`r_scale_check` with candidate-03's shifted owner score and matching
+`r_max_add` threshold.
 
 The combined patch changes only `src/rad_option.hh` and `2d/src/rad_option.hh`. The original source subtree remains **exactly** Git tree SHA `963387efecc4611d2103370ca8a6b03217e3efab`.
 
@@ -33,7 +32,7 @@ Windows/MSVC: `./scripts/run-msvc.ps1 -Mode combined-02-03` in a Developer Power
 
 ## Independent CI results
 
-[GitHub Actions run 41323213256](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41323213256) for commit `ddcafd53f52632ee9da586ccf2ac6456d47c6dfb`. **20 of 25 jobs completed successfully**: five distinct source profiles on each of four toolchain/OS configurations. The other **five macOS arm64 jobs were still queued**, and no inference is made about their results.
+[GitHub Actions run 41323213256](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41323213256) for commit `ddcafd53f52632ee9da586ccf2ac6456d47c6dfb`. The results below record the four completed platform profiles in that run. The later completed cross-platform matrix, including macOS ARM64, is linked from the [README](../README.md).
 
 | Mandatory regression suite, combined profile | Result on all four verified toolchains |
 |---|---|
@@ -52,7 +51,7 @@ Verified environments:
 - macOS, Clang `-O2 -std=c++11`;
 - Windows x64, MSVC `/O2 /std:c++14`.
 
-The original Voro++ and all three *independent* candidates retain their expected diagnostic patterns; a green baseline job means the test harness recorded the failures, **not** that the original geometry was correct. The standalone construction candidate-02 still fails A4–A5/A10, and standalone search candidate-03 still fails A6–A9. This noninterference is a useful cross-check of the changes' separation.
+The original Voro++ and the three individual candidates retain their distinct, expected diagnostic patterns; baseline success indicates that the test controls and failure recording behaved as specified. The standalone construction candidate-02 still fails A4–A5/A10, and standalone search candidate-03 still fails A6–A9. This noninterference is a useful cross-check of the changes' separation.
 
 ## Unresolved numerical and API-contract limitations
 
@@ -70,23 +69,23 @@ A12 conclusively shows that at `r=1e308` and in a unit domain, **both cells shou
 
 Even the factored product `(r_i-r_j)*(r_i+r_j)` can evaluate `0 * Inf = NaN` if the sum overflows, as can the existing factored `r_mul` in `r_init`. Importantly, `1e308` is a *finite radius* whose **square is not representable in binary64**. This regime must be explicitly distinguished from the original moderate-weight catastrophic cancellation where the squared radii themselves are finite.
 
-A12 records these six high-exponent failures in the successful combined-profile CI jobs. **Green does not mean this input regime has been fixed.**
+The six `1e308` failures remain explicitly recorded as diagnostic results.
 
 ### Near ties
 
 A11 excludes winner checks with a reference score gap `<=1e-12`, but still logs them. On extended-precision `long double` toolchains the 3D skew example `query=(-0.1,1.19,-0.1)` produces seven disagreements in 42 nonzero-but-extremely-small-gap diagnostic comparisons, with a reference margin near `5.57e-18`. This is not sufficient evidence of an unambiguous owner-selection defect at binary64 precision. On MSVC, `long double` is binary64, and the corresponding distinctions may round to exact ties; the diagnostic count should not be compared directly between platforms.
 
-### Broader work still pending
+### Other numerical boundaries
 
 The finite test matrices do not guarantee correctness for arbitrary power-weight differences, all scalar overflow/underflow scenarios, anisotropic or extremely large domains, numerical degeneracies, or periodic face-neighbor/image-shift metadata. The 2D source uses the finite `large_number=1e30` initialization for its search, so truly huge *geometric* coordinates deserve a dedicated follow-up rather than being assumed safe from the unit-domain tests.
 
 Separately, the construction-pruning operations `r_ctest`, `r_prime` and `r_cutoff` have **not** received a complete adversarial rounding/overflow audit. The A3 direct arithmetic test confirms one corrected cutoff decision; it is not yet a full-container witness of a skipped plane caused solely by `r_scale_check`.
 
-## Proposed research continuation
+## Subsequent investigation
 
-1. Decide the supported numerical **input contract** (signed radius semantics, finite exponent range, how much overflow resistance to aim for).
-2. Investigate the `1e308` equal-radius construction failure and high-exponent `r_mul`/plane calculations as a separate question; do not modify candidate-02/03 while diagnosing.
-3. Challenge the combined patch with boundary/degenerate cases and adversarial pruning before deciding whether it can be recommended as a minimal repair.
-4. After scientific review, write the main README as a detailed, self-contained account in several iterations. Only much later derive a brief external issue from that completed README.
-
-**No external Voro++ issue or pull request is created by this work.** All numerical code in this project remains in isolated, optional patch files.
+[Stage 11](test-stage11-pruning-scope.md) examines the remaining radial
+pruning arithmetic near rounding and overflow boundaries. The same
+construction and owner-search corrections were later adapted to the
+reorganized [`dev` branch](dev-branch.md), including dedicated
+triclinic cells. The unresolved input-range questions above remain
+separate from the demonstrated errors at radii near `1e8`.

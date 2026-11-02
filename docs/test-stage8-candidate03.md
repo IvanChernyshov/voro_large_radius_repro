@@ -1,6 +1,6 @@
 # Stage 8 — candidate-03: shifted-power location search
 
-**Status:** stand-alone experimental repair for the native `find_voronoi_cell()` path in Voro++ 2D and 3D. The pinned original Voro++ source remains unchanged. This patch is **independent of candidate-01 and candidate-02**, and does not modify power-cell construction.
+Candidate-03 addresses the native `find_voronoi_cell()` path in 2D and 3D. It is a separate patch against the original `master` source and leaves cell construction unchanged.
 
 ## 1. Why the original search loses information
 
@@ -48,13 +48,13 @@ inline double r_current_sub(double rs, int ijk, int q) {
 
 Here `radius_index(q)` stands for the original 2D/3D storage offsets; the actual patch uses `3*q+2` and `4*q+3` respectively. The equal-radius branch also prevents evaluating `0 * infinity` if `max_radius + r` overflows for very large but equal finite radii.
 
-This is an exact-algebra justification for the **specified input domain**, not a proof of floating-point robustness for all finite radii or extremely close-to-tie queries.
+The derivation assumes nonnegative radii. The finite tests below examine its floating-point behavior away from nearly tied scores.
 
-## 3. What changes and what does not
+## 3. Patch contents
 
 `patches/candidate-03.patch` modifies only **`radius_poly::r_current_sub` and `r_max_add`**, plus their documentation, in the two original `rad_option.hh` files. The existing `r_scale`, `r_scale_check`, `r_mul`, `r_ctest`, `r_prime` and `r_cutoff` computations are untouched. The patch was independently applied with `patch -p1` to a clean source copy and compared byte-for-byte with the locally tested modified headers.
 
-Candidate-03 is applied **directly to baseline**, never cumulatively with candidate-02. The source tree retained under `vendor/voro/` has the same Git tree hash as original Voro++ `master`: `963387efecc4611d2103370ca8a6b03217e3efab`.
+Candidate-03 applies directly to the pinned original source, independently of candidate-02. The source tree retained under `vendor/voro/` has the same Git tree hash as original Voro++ `master`: `963387efecc4611d2103370ca8a6b03217e3efab`.
 
 ## 4. Native tests
 
@@ -89,23 +89,21 @@ The locally compiled source has matching original Git blob IDs for `rad_option.h
 
 The baseline A4–A5 checks separately reported 20 or 21 wrong owners **per dimension**, depending on compiler, versus zero under candidate-03. Candidate-01 and candidate-02 retain the same owner-query failures as baseline in their respective CI jobs.
 
-At the time of writing **16/20 CI jobs completed successfully** (all four profiles on the four platforms above). The **four macOS arm64 jobs remained queued**, so no result is asserted for that platform.
+This table records the four platform profiles completed in the initial run; macOS ARM64 coverage followed in the combined-patch CI ([Stage 10](test-stage10-combined.md)).
 
-The specific number of baseline errors is sensitive to platform/compiler: do not elevate a particular error count into an invariant. Conversely, green diagnostic jobs for baseline/other candidates **do not** mean their owner queries are correct.
+Baseline error counts depend on the compiler. Baseline and construction-only profiles retain these errors as diagnostic results.
 
 ## 6. Separation from power-cell construction
 
 Because candidate-03 changes only the location-query arithmetic, its A6–A9 results intentionally remain like unmodified Voro++, including the **66 incorrect A6–A7 2D configurations and 174 incorrect 3D configurations** at large equal radii. The observed A8/A9 individual-cell failures also remain. This non-interference was independently verified by the full CI run and locally for A8–A9.
 
-Candidate-02 remains the independent construction-path candidate. **No combined candidate has yet been implemented or tested**, and we should not claim that passing these two independent test families guarantees their combination.
+Candidate-02 separately repairs cell construction. Their combined behavior was subsequently tested in [Stage 10](test-stage10-combined.md).
 
-## 7. Unresolved questions and next steps
+## 7. Limits of candidate-03
 
 - The mathematical pruning proof assumes nonnegative radii and finite, representable intermediate values. The current original Voro++ code tracks the maximum **signed radius**, not necessarily the maximum absolute radius; negative radius inputs are outside this candidate's established assumptions.
 - The factored product can overflow or underflow for some finite input values. The equal-radius branch avoids one problematic `0*infinity` case, but the broader extreme-exponent regime is not validated.
 - Exact boundary ties, near-ties with tiny score margins, empty containers, queries outside fundamental domains, and pathological anisotropic geometry require further focused testing.
 - The A10 enumeration is independent of Voro++'s location algorithm but limited to the stated finite image range and query matrix.
-- A direct scalar arithmetic regression for the `r_current_sub/r_max_add` contract at very large exponents would be worthwhile before recommending the patch.
-- After that, a separate **combined candidate** (candidate-02 + candidate-03) can be evaluated against the entire construction **and** location suite, without conflating which correction addresses which fault.
-
-**No external Voro++ issue, pull request or release has been created.** This remains a research-stage document; the repository README will be rewritten and reviewed later in several iterations.
+- Very large exponents and negative radii were examined in [Stage 9](test-stage9-extremes.md), with separate accepted and diagnostic cases.
+- The combined construction/search patch was verified against both families in [Stage 10](test-stage10-combined.md).

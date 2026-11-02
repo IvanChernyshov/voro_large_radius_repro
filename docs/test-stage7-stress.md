@@ -1,10 +1,10 @@
 # Stage 7 — A9 non-collinear / noncoplanar power-cell stress tests
 
-**Status:** reproducibility and candidate-02 acceptance checks for a finite deterministic stress matrix. No numerical code changes; original Voro++ and both existing candidate patches remain unchanged. This is not a final correctness claim or an external issue draft.
+This stage tests candidate-02 against irregular multi-site cells, after the aligned-site tests in [Stage 6](test-stage6-unequal.md).
 
-## Why this stage exists
+## Motivation
 
-The earlier A8 matrix places all sites on one axis, giving an especially strong analytic oracle, but exercising comparatively simple bisectors and cell topology. A9 deliberately tests irregular 2D and 3D power cells with multiple intersecting half-spaces, nontrivial face/vertex incidence, empty cells, periodic images, different block grids and different insertion orders. Every cell is checked separately; a correct *sum* of areas/volumes alone is insufficient.
+The earlier A8 matrix places all sites on one axis, giving an especially strong analytic oracle, but exercising comparatively simple bisectors and cell topology. A9 deliberately tests irregular 2D and 3D power cells with multiple intersecting half-spaces, nontrivial face/vertex incidence, empty cells, periodic images, different block grids and different insertion orders. Each cell is checked separately because the total area or volume can be correct even when individual cells are wrong.
 
 ## Input generation and test count
 
@@ -21,7 +21,7 @@ Each site set is evaluated in six radius patterns:
 | 4 | One `R+12 ULP` site, others `R-(3+i) ULP` | Dominance and potential empty cells |
 | 5 | One radius `R`, other radii zero | Extreme contrast and empty cells |
 
-All ULP values derive from `std::nextafter` and the original binary64 inputs. No unrepresentable negative radii are introduced.
+ULP offsets are derived from `std::nextafter` on the binary64 input radii.
 
 The matrix varies the block grid (1 and 3 blocks per axis) and insertion order (forward and reversed).
 
@@ -40,7 +40,7 @@ For 2D and 3D, the oracle is recomputed with image ranges `[-1,1]` and `[-2,2]` 
 (bx,bxy,by,bxz,byz,bz) = (10,2.3,10,-1.7,3.1,10).
 ```
 
-The comparison records for **each native cell** its empty/nonempty status, area/volume, centroid, and coordinate extrema. Per-quantity tolerances are `1e-5` in 2D, `2e-5` in 3D; the total-area/volume checks use `2e-5` and `5e-4`, respectively. These are finite absolute tolerances appropriate to the selected 10-unit domain; this is not a relative-error stress test spanning arbitrary scales.
+The comparison records for **each native cell** its empty/nonempty status, area/volume, centroid, and coordinate extrema. Per-quantity tolerances are `1e-5` in 2D, `2e-5` in 3D; the total-area/volume checks use `2e-5` and `5e-4`, respectively. The absolute tolerances are chosen for the 10-unit domain used in A9.
 
 ## Locally verified results
 
@@ -60,7 +60,7 @@ The two test source files were uploaded under Git blob SHA-1s matching the local
 
 ## Independent GitHub Actions results
 
-The exact GitHub-committed test sources were executed in [workflow run 41316575492](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41316575492) at commit `191d552f8b5f0598e6683ba0abf1c4186ba60fa9`. **12 of 15 jobs completed successfully**, covering all three source profiles on the four environments below. Three macOS arm64 jobs remained queued at this point; their results are not claimed.
+The exact GitHub-committed test sources were executed in [workflow run 41316575492](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41316575492) at commit `191d552f8b5f0598e6683ba0abf1c4186ba60fa9`. The table below covers the four platform profiles completed in that run. The combined-patch CI later added macOS ARM64 coverage; see [Stage 10](test-stage10-combined.md).
 
 | Platform / compiler | Original wrong 2D / 3D | Candidate-01 wrong 2D / 3D | Candidate-02 wrong 2D / 3D |
 |---|---|---|---|
@@ -71,9 +71,9 @@ The exact GitHub-committed test sources were executed in [workflow run 413165754
 
 All moderate-radius positive controls passed, and the independently checked reference volumes and image-range convergence were valid. Each 2D fraction has denominator 384 configurations and each 3D fraction denominator 960 configurations, per profile and platform.
 
-The precise **number of erroneous 3D configurations varies slightly with compiler and platform**. These are observed diagnostic failures, not a stable expected count or failure rate; do not tighten baseline acceptance around any fixed number. The candidate-02 result is the stricter check: any mismatch fails that profile.
+The precise **number of erroneous 3D configurations varies slightly with compiler and platform**. They are observed counts for this matrix, not a fixed failure rate. The candidate-02 result is the stricter check: any mismatch fails that profile.
 
-A green original/candidate-01 job means the harness built and recorded the failures; it does **not** mean the corresponding Voro++ geometry passed. Output logs are preserved in workflow artifacts.
+The original and candidate-01 jobs retain the numerical discrepancies as diagnostic results. The candidate-02 job requires all cases to match.
 
 ## How to run and interpret
 
@@ -91,8 +91,6 @@ Windows MSVC uses `./scripts/run-msvc.ps1 -Mode <profile>` from Developer PowerS
 
 **For candidate-02, any nonzero exit is fatal.** The existing A1–A8 checks remain in the same runner and retain their individual acceptance criteria.
 
-## Scope still open
+## Scope and subsequent tests
 
-A9 substantially expands the evidence to irregular, noncollinear/noncoplanar power cells. It does **not** prove correctness for all possible inputs, overflow/underflow, highly anisotropic or enormous domains, adversarial degeneracies, or all neighbor/image identity conventions. It also does **not** fix or approve `find_voronoi_cell()`, whose A4–A5 known failures are separate. MSVC's `long double` generally has binary64 precision; its independent confirmation remains important.
-
-No changes were made to the main project README, Voro++'s original source, or either candidate patch. No external issue has been created.
+A9 establishes construction accuracy for a finite set of irregular geometries. The owner-search path remains separate and is addressed in [Stage 8](test-stage8-candidate03.md). The extreme-value and near-tie tests are in [Stage 9](test-stage9-extremes.md). MSVC's `long double` has binary64 precision, so its reference calculation does not gain the extended precision available on some Unix toolchains. The original source snapshots remain pinned throughout.

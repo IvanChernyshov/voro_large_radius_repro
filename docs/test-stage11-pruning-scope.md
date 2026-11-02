@@ -1,6 +1,6 @@
 # Stage 11 — Scope-only audit of radial pruning arithmetic
 
-**Status: diagnostic only.** This stage does not alter any source file of Voro++, any experimental patch, or any numerical acceptance gate. In particular, **negative radii, near ties, very large finite exponents and near-threshold floating-point decisions are used to describe boundaries of the established evidence—not to request new validation rules or extra repairs from the Voro++ author.**
+This stage examines scalar rounding and overflow in the remaining radial pruning operations, following the combined-patch tests. Its numerical probes are kept separate from the cell and owner-search acceptance matrices.
 
 ## 1. Questions investigated
 
@@ -16,7 +16,7 @@ r_cutoff(lrs):     return lrs*r_val;
 
 For a nonnegative radius `r` and an accurately tracked maximum `R >= r`, the exact correction `delta = r² - R² <= 0`. The `r_ctest` formula is a conservative *geometric block-exclusion* predicate only when the arithmetic inequality is reliable; `r_prime/r_cutoff` feed corner/edge/face block-intersection tests in `v_compute`. These routes are distinct from the already tested plane-construction path (`r_scale`) and native owner search (`r_current_sub`).
 
-This stage asks only *what can go numerically wrong with those scalar expressions?* It does **not** assert that every such scalar input is reachable as a coherent geometric block configuration.
+The scalar inputs test the arithmetic predicates directly. Whether a particular input arises in a realizable container geometry is a separate question.
 
 ## 2. Reproducible native probe
 
@@ -43,15 +43,15 @@ Examples:
 - Unit case: `R=1`, `r=double(0.8)`, `q=1`, `M=double(0.40960000000000013)`. The exact left-minus-right difference is approximately **−3.97016e−17**, but the computed predicate returns true.
 - Large case: `R=1e8`, `r=0`, `q=1.1805916207174113e21`, `M=1.1805716208021146e21`. The exact difference is approximately **−2.26609e25** against terms of order `1e42`, yet the native predicate returns true.
 
-These are **ULP-scale scalar predicate counterexamples**, not proven examples of a missing Voronoi facet. No conclusion about an end-to-end tessellation error should be drawn from the sign flip alone.
+The two comparisons demonstrate ULP-scale scalar sign errors. A missing Voronoi facet would require a corresponding end-to-end geometric example.
 
 ## 3. Local source and numerical checks
 
 The local files used for the probe match the Git blobs of original Voro++ `master` commit `b0dac575a47af0f90b5b100e6dc199a493c7cb83` for `src/rad_option.hh`, `2d/src/rad_option.hh` and both amalgamated C++ translation units. The probe source was compiled and executed in **both 2D and 3D** with GCC 14.2 `-O2 -std=c++11` and Clang 17 `-O2 -std=c++11`. All four executions reported the cases above with the same decision/finite-value classification.
 
-A small *separate, temporary* instrumented-container check ran 800 attempts to compute 2D cells and 864 attempts to compute 3D cells with varied block grids, periodic flags and radii, including sites on selected grid boundaries. **No actual call with `rv=0` to `r_prime` was observed in that sample.** This is not proof such a call cannot occur. The instrumented files were never committed or used to change a candidate patch.
+A small *separate, temporary* instrumented-container check ran 800 attempts to compute 2D cells and 864 attempts to compute 3D cells with varied block grids, periodic flags and radii, including sites on selected grid boundaries. **No actual call with `rv=0` to `r_prime` was observed in that sample.** The finite sample does not exclude such a call in other geometries. Instrumentation was confined to temporary source copies.
 
-## 4. How to reproduce (no acceptance gate)
+## 4. Reproducing the scalar probes
 
 The normal Bash and Windows PowerShell runners now compile and invoke the diagnostic after the established A1–A12 suites:
 
@@ -67,23 +67,23 @@ Each profile records:
 - `output/<profile>/2d_pruning_scope.txt`
 - `output/<profile>/3d_pruning_scope.txt`
 
-MSVC executes the same source with the appropriate dimension macro. **A scalar mismatch, nonfinite result or diagnostic build failure does not change the main CI acceptance result.** A diagnostic probe runs independently from all previously established test gates; its purpose is to retain and compare observed numerical behavior, not certify a new supported range.
+MSVC executes the same source with the appropriate dimension macro. These scalar diagnostics record mismatches and nonfinite values without changing the geometric acceptance gates.
 
 ## Cross-platform CI confirmation
 
-[GitHub Actions run 41328535563](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41328535563) tested commit `82fdfd79c1fb3bf0d2412d480f0076a3603c01b7`. At the time of this record, **20 of 25 jobs completed successfully** with **no failures**: all five source profiles (`baseline`, `candidate`, `candidate-02`, `candidate-03`, `combined-02-03`) on Linux GCC, Linux Clang, macOS Clang and Windows x64 MSVC. The five macOS arm64 jobs were queued, so their outcome remains unverified.
+[GitHub Actions run 41328535563](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41328535563) tested commit `82fdfd79c1fb3bf0d2412d480f0076a3603c01b7`. At the time of this record, The results below cover five source profiles on Linux GCC, Linux Clang, macOS Clang and Windows x64 MSVC, all completed successfully. The later full cross-platform CI matrix, including macOS ARM64, is linked in the [README](../README.md).
 
 In all four completed toolchain configurations the added 2D and 3D scalar diagnostic **compiled and executed**, printing `SUMMARY radius_poly dim=2 category=scope-only no_acceptance_claim=1` and the corresponding 3D line. Detailed probe values are retained as `2d_pruning_scope.txt` and `3d_pruning_scope.txt` within each profile's CI output artifacts.
 
-The new diagnostic is deliberately not a requirement to pass or a reason to alter a candidate. Previously required A1–A12 gates were unchanged and their completed CI jobs remained successful.
+The probe records numerical classifications separately; all previously established A1–A12 acceptance checks remained unchanged.
 
-## 5. Explicit scope policy for this and previous stages
+## 5. Interpreting the results
 
 The same interpretation applies to the **negative-radius tests, extremely large exponent tests and near-tie tests in Stages 9–10**:
 
-- **Negative radius:** mathematical power diagrams depend on squared radii, but Voro++'s API is a scientific radius API. Without an explicit support contract, we do not ask the author to support negative radii, insert parameter checks, or adjust an otherwise focused repair to accommodate signed values.
-- **Equal radii `1e308`:** the source contains representable finite radii but not representable binary64 squares/sums. The already observed `NaN`/empty-cell behavior delineates a limitation; it is **not part of the success criteria for the focused `1e8` cancellation repair**.
-- **Near ties / boundary rounding:** a scalar decision that flips within roughly one ULP is worth documenting. It needs an independently verified, geometrically realizable and numerically robust end-to-end counterexample before being promoted into a separate defect claim.
-- **Confirmed moderate-regime defects (A1–A10):** unlike the boundary diagnostics above, these were demonstrated on actual 2D/3D Voro++ containers and have their own explicit correctness gates.
+- **Negative radius:** power geometry depends on squared radii, whereas the source tracks the maximum signed radius. The supported semantics of negative input radii remain unclear.
+- **Equal radii `1e308`:** the input radii are finite, but intermediate binary64 squares and sums overflow. These failures occur outside the demonstrated `1e8` cancellation correction.
+- **Near ties / boundary rounding:** the scalar decisions can change within roughly one ULP. A reliable geometric failure claim would require a corresponding container-level reproduction with an unambiguous result.
+- **Moderate-radius errors (A1–A10):** these occur in actual 2D/3D containers and are checked by separate geometric acceptance tests.
 
-**There is no fourth arithmetic patch proposed by Stage 11.** These results simply define where our conclusions about candidate-02, candidate-03 and their combination cease to be supported by current evidence. The comprehensive main README remains deferred until the scientific narrative is reviewed separately; no external Voro++ issue or PR is being prepared or sent here.
+The scalar probes delimit the tested numerical range of the two corrections. They do not motivate an additional arithmetic patch in this study.

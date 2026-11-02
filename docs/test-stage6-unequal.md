@@ -1,13 +1,13 @@
 # Stage 6 — unequal-radius, multi-site power-cell regression tests (A8)
 
-**Purpose:** test the proposed `candidate-02` plane-arithmetic repair against genuinely unequal radii, including empty cells and periodic images, without changing the original Voro++ source or the patch under test. The goal is to determine its **tested scope**, not yet certify it as a general solution.
+This stage tests candidate-02 on unequal radii, empty cells and periodic images, extending the earlier equal-radius construction checks.
 
-## New native C++11 tests
+## C++11 test cases
 
 - `repro/unequal2d.cpp` — 168 cases: 7 radius scenarios × 4 rectangular periodicity masks × 3 block grids (1, 2, 4 per axis) × 2 particle insertion orders.
 - `repro/unequal3d.cpp` — 420 cases: 336 with all 8 rectangular periodicity masks, plus 84 with the dedicated `container_periodic_poly` in orthogonal and genuinely skew lattices.
 
-Every cell is compared **individually**, not just via the sum of areas or volumes. We check nonempty/empty classification, measures and cell-coordinate extents. Control cases must succeed in every source profile.
+Every cell is compared individually as well as through the total area or volume. We check nonempty/empty classification, measures and cell-coordinate extents. Control cases must succeed in every source profile.
 
 ### Exact scenarios
 
@@ -58,11 +58,11 @@ On Linux x86-64 with GCC `-O2 -std=c++11` and Clang `-O3 -std=c++11`:
 
 The original may preserve the *total* domain measure while assigning incorrect individual cell measures or locations. Candidate-01's small improvement in a few 3D high-contrast periodic cases does not solve the adjacent-radius scenarios.
 
-The local test source was uploaded to GitHub using **identical Git blob SHA-1 IDs**, not reconstructed by hand with potentially different inputs.
+The test files committed to GitHub match the locally compiled sources by Git blob SHA-1.
 
 ## Independent GitHub Actions verification
 
-[Workflow run 41315343597](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41315343597) tested the *committed* sources and test code at `400b245f583478d1787389f52ede3030ac20f6ef`. At the time of recording, **12 of 15 jobs had completed successfully**, with the remaining three macOS arm64 jobs **queued** and therefore not claimed as verified.
+[Workflow run 41315343597](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41315343597) tested the *committed* sources and test code at `400b245f583478d1787389f52ede3030ac20f6ef`. The results below are from the four completed platform profiles in that run. Subsequent macOS ARM64 and combined-patch results are summarized in [Stage 10](test-stage10-combined.md).
 
 | Toolchain | Original 2D / 3D mismatches | Candidate-01 2D / 3D mismatches | Candidate-02 2D / 3D mismatches | Controls |
 |---|---|---|---|---|
@@ -71,9 +71,9 @@ The local test source was uploaded to GitHub using **identical Git blob SHA-1 ID
 | macOS Clang `-O2` | 72 / 188 | 72 / 180 | **0 / 0** | All pass |
 | Windows x64 MSVC `/O2` | 72 / 188 | 72 / 180 | **0 / 0** | All pass |
 
-Each completed job executed 168 native A8 cases in 2D and 420 in 3D, in addition to the existing A1–A7 suite. The original and candidate-01 profiles are **diagnostic**, not acceptance passes; success means the reference/control infrastructure worked and discrepancies were faithfully recorded. Candidate-02 requires every A8 case to pass.
+Each completed job executed 168 native A8 cases in 2D and 420 in 3D, in addition to the existing A1–A7 suite. The original and candidate-01 profiles record the mismatches as diagnostic results; candidate-02 requires all A8 checks to pass. Candidate-02 requires every A8 case to pass.
 
-These are observed results for the defined finite test matrix, not a statistical failure rate or evidence of universal correctness.
+Counts refer to the tested 168 2D and 420 3D configurations, not to a statistical failure rate.
 
 ## Running and interpreting results
 
@@ -85,8 +85,6 @@ bash ./run.sh candidate-02
 
 On Windows use `pwsh -File ./scripts/run-msvc.ps1 -Mode <profile>`. The resulting `output/<profile>/2d_unequal.txt` and `3d_unequal.txt` contain every case and an `A8` summary. Failed ordinary-scale controls, invalid references or abnormal exits always fail the run. Only `candidate-02` currently **requires zero A8 mismatches**; the previous profiles record mismatches as diagnostic evidence.
 
-## Remaining limits
+## Subsequent coverage
 
-These experiments do **not** test arbitrary non-collinear configurations in ordinary rectangular containers, highly anisotropic cells, all possible weight ranges or numerical overflow/underflow. The factored product can still overflow for some finite input radii. Correct periodic-image neighbor IDs and the separate `find_voronoi_cell()` route are also outside the acceptance scope. Further testing and an independent review are needed before recommending any final change to Voro++.
-
-**No upstream issue is submitted or planned at this stage.** The main project README remains provisional.
+The aligned sites in A8 make an especially clear analytical reference. [Stage 7](test-stage7-stress.md) adds irregular sites and nontrivial cell topology. [Stage 8](test-stage8-candidate03.md) treats owner search separately; [Stage 9](test-stage9-extremes.md) examines overflow, near ties and signed radii. The factored arithmetic retains limitations at extreme magnitudes.

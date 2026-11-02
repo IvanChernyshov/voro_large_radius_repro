@@ -1,6 +1,6 @@
 # Stage 9 — A11/A12 extreme exponents, domain remapping, signed radii and near ties
 
-**Status:** focused exploration of candidate-03's stated input domain and the known limits of candidate-02's plane arithmetic. This stage does not change any numerical implementation or the original Voro++ sources. The tests intentionally distinguish *required passes* from *diagnostic, not-yet-supported cases*.
+This stage probes the numerical range of the construction and owner-search candidates, separating the accepted nonnegative-radius cases from signed-radius, near-tie and overflowing inputs.
 
 ## A11 — Native `find_voronoi_cell()` at extreme radius scales
 
@@ -21,7 +21,7 @@ The reference checks the 5- and 6-image enumeration ranges for agreement. For nu
 radius_gap = (abs(r) == R) ? 0 : (R-abs(r))*(R+abs(r));
 ```
 
-This avoids constructing `0 * infinity` in the reference when `r=1e308`. A nonmaximal radius can legitimately have an infinite *representable* gap at this scale; the maximal-radius site then remains the unique finite-score owner in these bounded test geometries. The test excludes requests within `1e-12` of a reference score tie from mandatory correctness and reports such queries separately.
+The special case avoids `0 * infinity` when `r=1e308`. For the bounded test geometries, the maximal-radius site remains the unique finite-score owner when other shifted gaps overflow. The test excludes requests within `1e-12` of a reference score tie from mandatory correctness and reports such queries separately.
 
 ### Local results (GCC `-O2` and Clang `-O3`, Linux x86-64)
 
@@ -32,11 +32,11 @@ This avoids constructing `0 * infinity` in the reference when `r=1e308`. A nonma
 | Negative-radius diagnostic comparisons | **1,184 incorrect / 6,300** | **3,176 / 16,968** |
 | Nonzero but exceptionally small score-margin probes (diagnostic) | 0 incorrect / 1,764 | 7 / 42 |
 
-In the seven 3D near-tie discrepancies, the nominal reference margin is only about `5.57e-18` and the difference concerns a query in a skew periodic lattice. That margin is far below a robust binary64 comparison at the tested geometric scale. Exact ties are also counted but never asserted as unique-winner queries. **Neither category should be presented as a demonstrated algorithmic defect at an unambiguous point.**
+In the seven 3D near-tie discrepancies, the nominal reference margin is only about `5.57e-18` and the difference concerns a query in a skew periodic lattice. That margin is far below a robust binary64 comparison at the tested geometric scale. Exact ties are also counted but never asserted as unique-winner queries. The tiny score margins prevent a reliable claim of a wrong owner at a clearly separated point.
 
 The principal negative-radius counterexample is `r0=r1=-1e8` with sites `x=0.25, 0.75` in a unit domain. The exact power diagram is identical to the equal-positive-radius diagram, but candidate-03 may choose the wrong site depending on insertion order and block geometry. This follows from the original `max_radius` tracking the largest *signed* radius (initially zero) while the proposed shifted-score proof assumes `0 <= ri <= R`. It is **not** fixed by the combined patch.
 
-Whether negative radii should be supported by a Voro++ API is a separate maintainer-contract question. This report does **not** assume that accepting a raw `double` parameter establishes a promise of negative physical sphere radii.
+The supported input contract for negative radii is not established by the native API documentation.
 
 ## A12 — Power-cell construction at extreme finite radius exponents
 
@@ -55,7 +55,7 @@ For profiles that repair construction, the three smaller exponents are **require
 
 ## Independent GitHub Actions confirmation
 
-[Stage 9 workflow run 41322933837](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41322933837) on `34b8d81abfc9dda0d998aa1871bca1fa2a0e9955`: **16 of 20 jobs completed successfully**, including all four profiles on Linux GCC, Linux Clang, macOS Clang and Windows MSVC. The four macOS arm64 jobs were queued and are not counted.
+[Stage 9 workflow run 41322933837](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41322933837) on `34b8d81abfc9dda0d998aa1871bca1fa2a0e9955`: The original CI table covers four completed platform profiles. The combined-patch tests subsequently covered macOS ARM64 as well; see [Stage 10](test-stage10-combined.md).
 
 In every completed `candidate-03` job, A11 reports **zero mismatches in 20,958 accepted nonnegative-radius 2D comparisons and 58,296 accepted 3D comparisons**. A11 also reports **zero wrong outside-domain remappings**. Negative-radius diagnostic mismatch counts differ slightly by compiler (e.g. GCC: 1,188 / 6,300 in 2D and 3,192 / 16,968 in 3D; Windows MSVC and Linux Clang: 1,184 and 3,176), so the particular count is not an invariant.
 
@@ -65,12 +65,10 @@ Near-tie classification also depends on arithmetic precision: in MSVC `long doub
 
 ## Current acceptance semantics
 
-Run the original and existing independent candidate profiles with `bash ./run.sh <profile>` or `./scripts/run-msvc.ps1 -Mode <profile>`. A11 nonnegative queries are required for **candidate-03** and the planned combined profile; failures on other source versions are diagnostic. Negative-radius and sub-`1e-12` near-tie errors are always recorded separately. A12 requires the smaller exponents for candidate-02 and the planned combined profile; `1e308` failures are informational for all variants.
+Run the source profiles with `bash ./run.sh <profile>` or `./scripts/run-msvc.ps1 -Mode <profile>`. A11 nonnegative queries are mandatory for candidate-03 and the later combined profile. A12 requires the three smaller exponents for candidate-02 and the combined profile. Signed-radius, near-tie and `1e308` cases remain diagnostic.
 
 The same independent per-cell and per-owner checks used by A1–A10 remain in place. None of this constitutes an all-finite-double guarantee.
 
-## Next step
+## Follow-up
 
-After Stage 9 is reproducible in CI, add a **separate non-cumulative combined profile** applying both candidate-02 and candidate-03 to a fresh original-source copy. Require all established A1–A10 acceptance checks and A11's nonnegative and A12's supported exponent subsets, retaining the negative-radius and `1e308` failures explicitly as unresolved.
-
-No Voro++ issue or PR has been submitted; root README revision remains deferred.
+[Stage 10](test-stage10-combined.md) combines candidate-02 and candidate-03 against a fresh original-source copy and tests the full construction and owner-search matrix. The signed-radius and `1e308` observations remain useful bounds on the demonstrated numerical range.
