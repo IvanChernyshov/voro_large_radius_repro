@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Diagnostic-only: print actual dedicated-triclinic image-block indices.
+# Diagnostic-only: trace out-of-range image blocks from the legacy != end() test iteration.
 # Instrument ONLY a temporary copy of the original upstream dev snapshot.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -41,7 +41,7 @@ for spec in "single-small orth 1 0" "pair-small orth 1 0" "pair-small skew 3 0" 
     read -r scenario lattice blocks reverse <<<"$spec"
     logfile="$ROOT/output/dev-triclinic/index-trace/${scenario}_${lattice}_b${blocks}.txt"
     rc=0
-    "$BUILD/probe" "$scenario" "$lattice" "$blocks" "$reverse" >"$logfile" 2>&1 || rc=$?
+    VORO_DEV_TRICLINIC_LEGACY_ITERATOR=1 "$BUILD/probe" "$scenario" "$lattice" "$blocks" "$reverse" >"$logfile" 2>&1 || rc=$?
     printf 'INDEX_PROBE scenario=%s lattice=%s blocks=%s exit=%s\n' "$scenario" "$lattice" "$blocks" "$rc"
     grep -E 'IMAGE_(INDEX|FATAL)_TRACE|Constructing periodic image|RESULT DEV_TRICLINIC' "$logfile" | head -12 || true
 done

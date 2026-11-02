@@ -70,12 +70,35 @@ std::vector<double> native_volumes(const std::vector<Site>& sites,bool skew,int 
         const Site& s=sites[i];
         con.put(int(i),s.x,s.y,s.z,s.r);
     }
+    // Capture only primary-domain generators before any compute_cell()
+    // creates new image-block particles. The dev iterator's != end()
+    // condition is not stable under image creation: it may continue into
+    // generated image blocks, unlike upstream's "< end()" loops.
+    struct Original {int ijk,q,id;};
+    std::vector<Original> originals;
+    for(int k=con.ez;k<con.wz;++k)
+      for(int j=con.ey;j<con.wy;++j)
+        for(int i=0;i<blocks;++i) {
+            const int ijk=i+blocks*(j+con.oy*k);
+            for(int q=0;q<con.co[ijk];++q) {
+                const int id=con.id[ijk][q];
+                if(id<0||id>=int(sites.size())) {std::cerr<<"ORACLE_ERROR: invalid primary ID\n";std::exit(2);}
+                originals.push_back(Original{ijk,q,id});
+            }
+        }
+    if(originals.size()!=sites.size()) {std::cerr<<"ORACLE_ERROR: primary site count mismatch\n";std::exit(2);}
     std::vector<double> volumes(sites.size(),0.);
     voro::voronoicell_neighbor_3d cell;
-    for(auto it=con.begin();it!=con.end();++it) {
-        const int id=con.id[it->ijk][it->q];
-        if(id<0||id>=int(sites.size())) {std::cerr<<"ORACLE_ERROR: invalid ID\n";std::exit(2);}
-        if(con.compute_cell(cell,it)) volumes[id]=cell.volume();
+    if(std::getenv("VORO_DEV_TRICLINIC_LEGACY_ITERATOR")) {
+        // Diagnostic of the OLD harness only; never used for geometry acceptance.
+        for(auto it=con.begin();it!=con.end();++it) {
+            const int id=con.id[it->ijk][it->q];
+            if(id<0||id>=int(sites.size())) {std::cerr<<"ORACLE_ERROR: invalid legacy ID\n";std::exit(2);}
+            if(con.compute_cell(cell,it)) volumes[id]=cell.volume();
+        }
+    } else {
+        for(const Original& site:originals)
+            if(con.compute_cell(cell,site.ijk,site.q)) volumes[site.id]=cell.volume();
     }
     return volumes;
 }
