@@ -24,6 +24,22 @@ jobs:
             output/combined-02-03/*_minimal.txt
           if-no-files-found: error
 
+  owner-shift-diagnostic:
+    name: "Owner-search global-shift regression / diagnostic only (Linux)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare original and shifted owner search on both branches
+        shell: bash
+        run: bash ./scripts/probe-owner-shift.sh
+      - name: Preserve owner-shift measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-shift-diagnostic-linux
+          path: output/owner-shift/
+          if-no-files-found: error
+
   minimal-msvc:
     name: "Minimal native reproduction / Windows MSVC"
     runs-on: windows-2022

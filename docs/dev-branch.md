@@ -155,6 +155,7 @@ bash ./scripts/reproduce-dev.sh             # four minimal original/patch compar
 bash ./scripts/reproduce-dev.sh extended    # A1–A3, A9, A10
 bash ./scripts/run-dev-openmp.sh            # OpenMP comparison
 bash ./scripts/probe-dev-triclinic.sh       # additional dedicated-cell diagnostics
+bash ./scripts/probe-owner-shift.sh         # known global-score-shift regression
 ```
 
 The runner writes baseline and patched measurements to
@@ -177,8 +178,11 @@ is recorded in
 ## Range of the results
 
 The corrected `dev` code has been checked for the input families
-above. Negative radii, intermediate overflow (including some `1e308`
-inputs), near-tie scores, and rounding near pruning boundaries remain
-outside those guarantees; they are documented in the
-[`master` arithmetic investigations](test-stage9-extremes.md)
+above. The separate [owner-shift diagnostic](test-stage10-combined.md#global-shift-owner-search-regression)
+also demonstrates a regression for **nonnegative** radii: the combined
+search patch can lose a local small-radius distinction when a remote
+site sets a much larger global radius. Negative radii, intermediate
+overflow (including some `1e308` inputs), near-tie scores, and
+rounding near pruning boundaries remain outside the tested guarantees;
+see the [`master` arithmetic investigations](test-stage9-extremes.md)
 and [pruning probes](test-stage11-pruning-scope.md).

@@ -84,6 +84,9 @@ The same interpretation applies to the **negative-radius tests, extremely large 
 - **Negative radius:** power geometry depends on squared radii, whereas the source tracks the maximum signed radius. The supported semantics of negative input radii remain unclear.
 - **Equal radii `1e308`:** the input radii are finite, but intermediate binary64 squares and sums overflow. These failures occur outside the demonstrated `1e8` cancellation correction.
 - **Near ties / boundary rounding:** the scalar decisions can change within roughly one ULP. A reliable geometric failure claim would require a corresponding container-level reproduction with an unambiguous result.
-- **Moderate-radius errors (A1–A10):** these occur in actual 2D/3D containers and are checked by separate geometric acceptance tests.
+- **Moderate-radius container failures:** cell-construction and owner-search
+  errors are demonstrated by the separate native geometric tests. A3 also
+  probes `r_scale_check` arithmetic directly; no end-to-end missed-face
+  example attributable solely to that check has been established.
 
 The scalar probes delimit the tested numerical range of the two corrections. They do not motivate an additional arithmetic patch in this study.

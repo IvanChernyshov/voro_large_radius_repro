@@ -22,7 +22,7 @@ The original Voro++ `master` sources were compiled on Linux x86-64
 with GCC `-O2` and Clang `-O3`. The tested code was subsequently
 pinned in `vendor/voro/` and matched against the original Git tree.
 
-| Radius | Box side `L` | Blocks per axis | Original 2D | Original 3D | Candidate-01 |
+| Radius | Box side `L` | Periodic-case blocks per axis | Original 2D | Original 3D | Candidate-01 |
 |---:|---:|---:|---|---|---|
 | 1 | 1 | 1 | Pass | Pass | Pass |
 | 10⁶ | 1 | 1 | Pass | Pass | Pass |
@@ -30,6 +30,10 @@ pinned in `vendor/voro/` and matched against the original Git tree.
 | 10⁸ | 1 | 1 | Fail | Fail | Pass |
 | 10⁸ | 1 | 2 | Fail | Fail | Pass |
 | 10⁸ | 100 | 1 | Pass | Pass | Pass |
+
+The two-site nonperiodic tests use one block per axis in every row.
+The `blocks` parameter affects only the single-site periodic cases
+in these initial reproductions; later suites test multi-site block grids.
 
 With two sites, `r=1e8`, `L=1` and one block per axis, the original
 cells cover only `0.5` of the domain, leaving a gap of width `0.5`
@@ -39,15 +43,16 @@ configurations give zero measure.
 
 ## Arithmetic explanation and later correction
 
-The original plane displacement in `rad_option.hh` is equivalent to
+The original `r_scale` plane displacement in `rad_option.hh` is equivalent to
 
 ```cpp
 rs + r_rad - rj*rj       // r_rad = ri*ri
 ```
 
 At `ri=rj=1e8`, the small `rs` is lost when added to `1e16`,
-before the large squares cancel. The first candidate (candidate-01)
-reordered the expression:
+before the large squares cancel. `r_scale_check` already subtracts
+the squares first, but is still sensitive to loss of nearby squared-radius
+differences. The first candidate (candidate-01) reordered `r_scale`:
 
 ```cpp
 rs + (r_rad-rj*rj)

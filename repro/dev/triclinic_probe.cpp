@@ -12,6 +12,8 @@
 #include <vector>
 
 namespace {
+// Keep the reference lattice identical to the native binary64 input.
+constexpr double skew_bxy=2.3,skew_bxz=-1.7,skew_byz=3.1;
 struct Site { double x,y,z,r; };
 uint32_t step(uint32_t& s) { return s=1664525u*s+1013904223u; }
 std::vector<Site> make_sites(const std::string& scenario) {
@@ -48,7 +50,9 @@ std::vector<Site> make_sites(const std::string& scenario) {
 
 double reference_volume(const std::vector<Site>& sites,int i,bool skew,int K) {
     const Site& s=sites[i];
-    const long double bxy=skew?2.3L:0.,bxz=skew?-1.7L:0.,byz=skew?3.1L:0.;
+    const long double bxy=skew?static_cast<long double>(skew_bxy):0.,
+                      bxz=skew?static_cast<long double>(skew_bxz):0.,
+                      byz=skew?static_cast<long double>(skew_byz):0.;
     voro::voronoicell_neighbor_3d c;
     c.init(-30,30,-30,30,-30,30);
     for(int kz=-K;kz<=K;++kz) for(int ky=-K;ky<=K;++ky)
@@ -64,7 +68,7 @@ double reference_volume(const std::vector<Site>& sites,int i,bool skew,int K) {
     return c.volume();
 }
 std::vector<double> native_volumes(const std::vector<Site>& sites,bool skew,int blocks,bool reverse) {
-    voro::container_triclinic_poly con(10.,skew?2.3:0.,10.,skew?-1.7:0.,skew?3.1:0.,10.,blocks,blocks,blocks,8);
+    voro::container_triclinic_poly con(10.,skew?skew_bxy:0.,10.,skew?skew_bxz:0.,skew?skew_byz:0.,10.,blocks,blocks,blocks,8);
     for(std::size_t k=0;k<sites.size();++k) {
         const std::size_t i=reverse?sites.size()-1-k:k;
         const Site& s=sites[i];

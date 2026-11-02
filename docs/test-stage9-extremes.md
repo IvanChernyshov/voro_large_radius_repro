@@ -32,7 +32,15 @@ The special case avoids `0 * infinity` when `r=1e308`. For the bounded test geom
 | Negative-radius diagnostic comparisons | **1,184 incorrect / 6,300** | **3,176 / 16,968** |
 | Nonzero but exceptionally small score-margin probes (diagnostic) | 0 incorrect / 1,764 | 7 / 42 |
 
-In the seven 3D near-tie discrepancies, the nominal reference margin is only about `5.57e-18` and the difference concerns a query in a skew periodic lattice. That margin is far below a robust binary64 comparison at the tested geometric scale. Exact ties are also counted but never asserted as unique-winner queries. The tiny score margins prevent a reliable claim of a wrong owner at a clearly separated point.
+The original Stage 9 run recorded seven 3D near-tie discrepancies for a
+skew-periodic query. The reference previously used exact decimal
+`long double` basis constants rather than promoting the actual binary64
+parameters passed to the container. For `query=(-0.1,1.19,-0.1)`, the
+exact binary64-input score gap is about `2.78e-17` (the earlier
+reference reported about `5.57e-18`). Both are well below a robust
+binary64 comparison at this geometric scale. These are diagnostics,
+not unique-owner acceptance claims; counts can change with the
+corrected reference and compiler precision.
 
 The principal negative-radius counterexample is `r0=r1=-1e8` with sites `x=0.25, 0.75` in a unit domain. The exact power diagram is identical to the equal-positive-radius diagram, but candidate-03 may choose the wrong site depending on insertion order and block geometry. This follows from the original `max_radius` tracking the largest *signed* radius (initially zero) while the proposed shifted-score proof assumes `0 <= ri <= R`. It is **not** fixed by the combined patch.
 
