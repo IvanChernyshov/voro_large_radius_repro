@@ -1,0 +1,286 @@
+--- a/src/rad_option.hh
++++ b/src/rad_option.hh
+@@ -116,9 +116,9 @@
+          * particle to initialize any required constants.
+          * \param[in] ijk the block that the particle is within.
+          * \param[in] s the index of the particle within the block. */
+-        inline void r_init(int ijk,int s,double &r_rad,double &r_mul) {
++        inline void r_init(int ijk,int s,double &r_current,double &r_mul) {
+             double &r=ppr[ijk][4*s+3];
+-            r_rad=r*r;
++            r_current=r;
+             r_mul=(r-max_radius)*(r+max_radius);
+         }
+         /** Sets a required constant to be used when carrying out a plane
+@@ -141,17 +141,15 @@
+         inline double r_cutoff(double lrs,double &r_val) {
+             return lrs*r_val;
+         }
+-        /** Adds the maximum radius squared to a given value.
+-         * \param[in] rs the value to consider.
+-         * \return The value with the radius squared added. */
+-        inline double r_max_add(double rs) {return rs+max_radius*max_radius;}
+-        /** Subtracts the radius squared of a particle from a given value.
+-         * \param[in] rs the value to consider.
+-         * \param[in] ijk the block that the particle is within.
+-         * \param[in] q the index of the particle within the block.
+-         * \return The value with the radius squared subtracted. */
++        /** Converts a shifted power score to the geometric squared-distance
++         * cutoff used by block pruning. */
++        inline double r_max_add(double rs) {return rs;}
++        /** Returns squared distance plus R^2-r^2, evaluated as a factored
++         * difference for nonnegative radii r <= R = max_radius. */
+         inline double r_current_sub(double rs,int ijk,int q) {
+-            return rs-ppr[ijk][4*q+3]*ppr[ijk][4*q+3];
++            const double r=ppr[ijk][4*q+3];
++            if(r==max_radius) return rs;
++            return rs+(max_radius-r)*(max_radius+r);
+         }
+         /** Scales a plane displacement prior to use in the plane cutting
+          * algorithm.
+@@ -159,8 +157,9 @@
+          * \param[in] ijk the block that the particle is within.
+          * \param[in] q the index of the particle within the block.
+          * \return The scaled plane displacement. */
+-        inline double r_scale(double rs,int ijk,int q,double &r_rad) {
+-            return rs+r_rad-ppr[ijk][4*q+3]*ppr[ijk][4*q+3];
++        inline double r_scale(double rs,int ijk,int q,double &r_current) {
++            const double rj=ppr[ijk][4*q+3];
++            return rs+(r_current-rj)*(r_current+rj);
+         }
+ 
+         /** Scales a plane displacement prior to use in the plane cutting
+@@ -172,9 +171,10 @@
+          * \param[in] q the index of the particle within the block.
+          * \return True if the cell could possibly cut the cell, false
+          * otherwise. */
+-        inline bool r_scale_check(double &rs,double mrs,int ijk,int q,double &r_rad) {
++        inline bool r_scale_check(double &rs,double mrs,int ijk,int q,double &r_current) {
+             double trs=rs;
+-            rs+=r_rad-ppr[ijk][4*q+3]*ppr[ijk][4*q+3];
++            const double rj=ppr[ijk][4*q+3];
++            rs+=(r_current-rj)*(r_current+rj);
+             return rs<sqrt(mrs*trs);
+         }
+ 
+@@ -196,9 +196,9 @@
+          * given particle to initialize any required constants.
+          * \param[in] ijk the block that the particle is within.
+          * \param[in] s the index of the particle within the block. */
+-        inline void r_init(int ijk,int s,double &r_rad,double &r_mul) {
++        inline void r_init(int ijk,int s,double &r_current,double &r_mul) {
+             double &r=ppr[ijk][3*s+2];
+-            r_rad=r*r;
++            r_current=r;
+             r_mul=(r-max_radius)*(r+max_radius);
+         }
+         /** Sets a required constant to be used when carrying out a
+@@ -222,18 +222,15 @@
+         inline double r_cutoff(double lrs,double &r_val) {
+             return lrs*r_val;
+         }
+-        /** Adds the maximum radius squared to a given value.
+-         * \param[in] rs the value to consider.
+-         * \return The value with the radius squared added. */
+-        inline double r_max_add(double rs) {return rs+max_radius*max_radius;}
+-        /** Subtracts the radius squared of a particle from a given
+-         * value.
+-         * \param[in] rs the value to consider.
+-         * \param[in] ijk the block that the particle is within.
+-         * \param[in] q the index of the particle within the block.
+-         * \return The value with the radius squared subtracted. */
++        /** Converts a shifted power score to the geometric squared-distance
++         * cutoff used by block pruning. */
++        inline double r_max_add(double rs) {return rs;}
++        /** Returns squared distance plus R^2-r^2, evaluated as a factored
++         * difference for nonnegative radii r <= R = max_radius. */
+         inline double r_current_sub(double rs,int ijk,int q) {
+-            return rs-ppr[ijk][3*q+2]*ppr[ijk][3*q+2];
++            const double r=ppr[ijk][3*q+2];
++            if(r==max_radius) return rs;
++            return rs+(max_radius-r)*(max_radius+r);
+         }
+         /** Scales a plane displacement prior to use in the plane cutting
+          * algorithm.
+@@ -241,8 +238,9 @@
+          * \param[in] ijk the block that the particle is within.
+          * \param[in] q the index of the particle within the block.
+          * \return The scaled plane displacement. */
+-        inline double r_scale(double rs,int ijk,int q,double &r_rad) {
+-            return rs+r_rad-ppr[ijk][3*q+2]*ppr[ijk][3*q+2];
++        inline double r_scale(double rs,int ijk,int q,double &r_current) {
++            const double rj=ppr[ijk][3*q+2];
++            return rs+(r_current-rj)*(r_current+rj);
+         }
+         /** Scales a plane displacement prior to use in the plane
+          * cutting algorithm, and also checks if it could possibly cut
+@@ -254,9 +252,10 @@
+          * \param[in] q the index of the particle within the block.
+          * \return True if the cell could possibly cut the cell, false
+          * otherwise. */
+-        inline bool r_scale_check(double &rs,double mrs,int ijk,int q,double &r_rad) {
++        inline bool r_scale_check(double &rs,double mrs,int ijk,int q,double &r_current) {
+             double trs=rs;
+-            rs+=r_rad-ppr[ijk][3*q+2]*ppr[ijk][3*q+2];
++            const double rj=ppr[ijk][3*q+2];
++            rs+=(r_current-rj)*(r_current+rj);
+             return rs<=0||rs*rs<mrs*trs;
+         }
+ };
+--- a/src/v_compute_2d.cc
++++ b/src/v_compute_2d.cc
+@@ -274,11 +274,11 @@
+     int i,j,di,dj,ei,ej,f,g,l,disp;
+     double fx,fy,gxs,gys,*radp;
+     unsigned int q,*e,*mij;
+-    double r_rad,r_mul,r_val;
++    double r_current,r_mul,r_val;
+ 
+     // Initialize the Voronoi cell to fill the entire container
+     if(!con.initialize_voronoicell(c,ij,s,ci,cj,i,j,x,y,disp)) return false;
+-    con.r_init(ij,s,r_rad,r_mul);
++    con.r_init(ij,s,r_current,r_mul);
+     if(!con.boundary_cuts(c,ij,x,y)) return false;
+ 
+     double crs,mrs;
+@@ -289,7 +289,7 @@
+         if(con.skip(ij,l,x,y)) continue;
+         x1=p[ij][ps*l]-x;
+         y1=p[ij][ps*l+1]-y;
+-        rs=con.r_scale(x1*x1+y1*y1,ij,l,r_rad);
++        rs=con.r_scale(x1*x1+y1*y1,ij,l,r_current);
+         if(!c.nplane(x1,y1,rs,id[ij][l])) return false;
+     }
+     l++;
+@@ -297,7 +297,7 @@
+         if(con.skip(ij,l,x,y)) {l++;continue;}
+         x1=p[ij][ps*l]-x;
+         y1=p[ij][ps*l+1]-y;
+-        rs=con.r_scale(x1*x1+y1*y1,ij,l,r_rad);
++        rs=con.r_scale(x1*x1+y1*y1,ij,l,r_current);
+         if(!c.nplane(x1,y1,rs,id[ij][l])) return false;
+         l++;
+     }
+@@ -387,7 +387,7 @@
+                     if(con.skip(ij,l,x,y)) {l++;continue;}
+                     x1=p[ij][ps*l]-x2;
+                     y1=p[ij][ps*l+1]-y2;
+-                    rs=con.r_scale(x1*x1+y1*y1,ij,l,r_rad);
++                    rs=con.r_scale(x1*x1+y1*y1,ij,l,r_current);
+                     if(!c.nplane(x1,y1,rs,id[ij][l])) return false;
+                     l++;
+                 } while (l<co[ij]);
+@@ -397,7 +397,7 @@
+                     x1=p[ij][ps*l]-x2;
+                     y1=p[ij][ps*l+1]-y2;
+                     rs=x1*x1+y1*y1;
+-                    if(con.r_scale_check(rs,mrs,ij,l,r_rad)&&!c.nplane(x1,y1,rs,id[ij][l])) return false;
++                    if(con.r_scale_check(rs,mrs,ij,l,r_current)&&!c.nplane(x1,y1,rs,id[ij][l])) return false;
+                     l++;
+                 } while (l<co[ij]);
+             }
+@@ -469,7 +469,7 @@
+                     if(con.skip(ij,l,x,y)) {l++;continue;}
+                     x1=p[ij][ps*l]-x2;
+                     y1=p[ij][ps*l+1]-y2;
+-                    rs=con.r_scale(x1*x1+y1*y1,ij,l,r_rad);
++                    rs=con.r_scale(x1*x1+y1*y1,ij,l,r_current);
+                     if(!c.nplane(x1,y1,rs,id[ij][l])) return false;
+                     l++;
+                 } while (l<co[ij]);
+@@ -479,7 +479,7 @@
+                     x1=p[ij][ps*l]-x2;
+                     y1=p[ij][ps*l+1]-y2;
+                     rs=x1*x1+y1*y1;
+-                    if(con.r_scale_check(rs,mrs,ij,l,r_rad)&&!c.nplane(x1,y1,rs,id[ij][l])) return false;
++                    if(con.r_scale_check(rs,mrs,ij,l,r_current)&&!c.nplane(x1,y1,rs,id[ij][l])) return false;
+                     l++;
+                 } while (l<co[ij]);
+             }
+@@ -552,7 +552,7 @@
+                 if(con.skip(ij,l,x,y)) {l++;continue;}
+                 x1=p[ij][ps*l]-x2;
+                 y1=p[ij][ps*l+1]-y2;
+-                rs=con.r_scale(x1*x1+y1*y1,ij,l,r_rad);
++                rs=con.r_scale(x1*x1+y1*y1,ij,l,r_current);
+                 if(!c.nplane(x1,y1,rs,id[ij][l])) return false;
+                 l++;
+             } while (l<co[ij]);
+--- a/src/v_compute_3d.cc
++++ b/src/v_compute_3d.cc
+@@ -290,10 +290,10 @@
+     int i,j,k,di,dj,dk,ei,ej,ek,f,g,l,disp;
+     double fx,fy,fz,gxs,gys,gzs,*radp;
+     unsigned int q,*e,*mijk;
+-    double r_rad,r_mul,r_val;
++    double r_current,r_mul,r_val;
+ 
+     if(!con.initialize_voronoicell(c,ijk,s,ci,cj,ck,i,j,k,x,y,z,disp)) return false;
+-    con.r_init(ijk,s,r_rad,r_mul);
++    con.r_init(ijk,s,r_current,r_mul);
+ 
+     // Initialize the Voronoi cell to fill the entire container
+     double crs,mrs;
+@@ -305,7 +305,7 @@
+         x1=p[ijk][ps*l]-x;
+         y1=p[ijk][ps*l+1]-y;
+         z1=p[ijk][ps*l+2]-z;
+-        rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_rad);
++        rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_current);
+         if(!c.nplane(x1,y1,z1,rs,id[ijk][l])) return false;
+     }
+     l++;
+@@ -313,7 +313,7 @@
+         x1=p[ijk][ps*l]-x;
+         y1=p[ijk][ps*l+1]-y;
+         z1=p[ijk][ps*l+2]-z;
+-        rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_rad);
++        rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_current);
+         if(!c.nplane(x1,y1,z1,rs,id[ijk][l])) return false;
+         l++;
+     }
+@@ -408,7 +408,7 @@
+                     x1=p[ijk][ps*l]-x2;
+                     y1=p[ijk][ps*l+1]-y2;
+                     z1=p[ijk][ps*l+2]-z2;
+-                    rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_rad);
++                    rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_current);
+                     if(!c.nplane(x1,y1,z1,rs,id[ijk][l])) return false;
+                     l++;
+                 } while (l<co[ijk]);
+@@ -418,7 +418,7 @@
+                     y1=p[ijk][ps*l+1]-y2;
+                     z1=p[ijk][ps*l+2]-z2;
+                     rs=x1*x1+y1*y1+z1*z1;
+-                    if(con.r_scale_check(rs,mrs,ijk,l,r_rad)&&!c.nplane(x1,y1,z1,rs,id[ijk][l])) return false;
++                    if(con.r_scale_check(rs,mrs,ijk,l,r_current)&&!c.nplane(x1,y1,z1,rs,id[ijk][l])) return false;
+                     l++;
+                 } while (l<co[ijk]);
+             }
+@@ -490,7 +490,7 @@
+                     x1=p[ijk][ps*l]-x2;
+                     y1=p[ijk][ps*l+1]-y2;
+                     z1=p[ijk][ps*l+2]-z2;
+-                    rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_rad);
++                    rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_current);
+                     if(!c.nplane(x1,y1,z1,rs,id[ijk][l])) return false;
+                     l++;
+                 } while (l<co[ijk]);
+@@ -500,7 +500,7 @@
+                     y1=p[ijk][ps*l+1]-y2;
+                     z1=p[ijk][ps*l+2]-z2;
+                     rs=x1*x1+y1*y1+z1*z1;
+-                    if(con.r_scale_check(rs,mrs,ijk,l,r_rad)&&!c.nplane(x1,y1,z1,rs,id[ijk][l])) return false;
++                    if(con.r_scale_check(rs,mrs,ijk,l,r_current)&&!c.nplane(x1,y1,z1,rs,id[ijk][l])) return false;
+                     l++;
+                 } while (l<co[ijk]);
+             }
+@@ -593,7 +593,7 @@
+                 x1=p[ijk][ps*l]-x2;
+                 y1=p[ijk][ps*l+1]-y2;
+                 z1=p[ijk][ps*l+2]-z2;
+-                rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_rad);
++                rs=con.r_scale(x1*x1+y1*y1+z1*z1,ijk,l,r_current);
+                 if(!c.nplane(x1,y1,z1,rs,id[ijk][l])) return false;
+                 l++;
+             } while (l<co[ijk]);

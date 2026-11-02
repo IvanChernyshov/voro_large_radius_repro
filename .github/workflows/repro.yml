@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: error
 
   dev-baseline-minimal:
-    name: "Dev branch minimal / ${{ matrix.platform.tag }}"
+    name: "Dev baseline and correction / ${{ matrix.platform.tag }}"
     runs-on: ${{ matrix.platform.os }}
     strategy:
       fail-fast: false
@@ -72,13 +72,15 @@ jobs:
           $CXX --version
           if [[ "${{ matrix.platform.tag }}" == macos-arm64-* ]]; then test "$(uname -m)" == arm64; fi
           if [[ "${{ matrix.platform.tag }}" == macos-intel-* ]]; then test "$(uname -m)" == x86_64; fi
-          bash ./scripts/run-dev-minimal.sh
+          bash ./scripts/reproduce-dev.sh
       - name: Save dev branch baseline measurements
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dev-minimal-${{ matrix.platform.tag }}
-          path: output/dev-baseline/*_minimal.txt
+          name: dev-baseline-and-correction-${{ matrix.platform.tag }}
+          path: |
+            output/dev-baseline/*_minimal.txt
+            output/dev-combined/*_minimal.txt
           if-no-files-found: warn
 
   reproduce:
