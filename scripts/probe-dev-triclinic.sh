@@ -42,6 +42,13 @@ for mode in baseline combined; do
       done
     done
   done
+  # Broad A9 nine-site dedicated-triclinic sweep: diagnostic until reviewed.
+  "$CXX" $CXXFLAGS -pthread -I"$TMP/voro/src" "$ROOT/repro/dev/stress3d.cpp" "$BUILD/voro-dev.o" -o "$BUILD/stress3d"
+  stress_log="$OUT/$mode/A9_full_dedicated.txt"
+  stress_rc=0
+  VORO_DEV_A9_TRICLINIC=1 "$BUILD/stress3d" > "$stress_log" 2>&1 || stress_rc=$?
+  printf 'A9_DEDICATED mode=%s exit=%s\n' "$mode" "$stress_rc"
+  grep '^SUMMARY A9 dim=3' "$stress_log" || tail -10 "$stress_log"
   printf 'SUMMARY DEV_TRICLINIC_DIAGNOSTIC mode=%s passed=%s mismatches=%s upstream_internal_errors=%s unexpected=%s\n' "$mode" "$passed" "$mismatch" "$known_internal" "$unexpected"
   rm -rf "$TMP"
   trap - EXIT

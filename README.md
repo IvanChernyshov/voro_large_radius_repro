@@ -161,6 +161,7 @@ tested periodic-image ranges and do not certify every lattice.
 | A11–A12, selected nonnegative / extreme cases (`master`) | Pass within documented acceptance scope |
 | A9, 2D and 3D rectangular construction (`dev`) | 384/384 and 768/768 |
 | A10, 2D and 3D owner queries (`dev`, including triclinic owner search) | 36,288/36,288 and 38,880/38,880 |
+| Dedicated triclinic 3D cell construction (`dev`, isolated primary-site probe) | 40/40 corrected; original 24/40 |
 | OpenMP concurrency (`dev`, four threads) | No mismatches in 2D/3D cell and owner checks |
 
 The selected `dev` regression matrices pass on Linux x86-64
@@ -189,12 +190,16 @@ a formal correctness guarantee for all input geometries.
 - Other radial pruning expressions (`r_ctest`, `r_prime`,
   `r_cutoff`) are unchanged. [Scope-only arithmetic probes](docs/test-stage11-pruning-scope.md)
   are **not** additional geometric acceptance guarantees.
-- In the pinned `dev`, dedicated `container_triclinic_poly::compute_cell`
-  crashes with `Constructing periodic image for nonexistent point`
-  even in the tested ordinary-radius configurations, on **both**
-  original and patched code. A separate diagnostic found 40/40 such
-  errors for each variant; **no dedicated triclinic cell-construction
-  pass is claimed**. Triclinic **owner search** is separately tested.
+- Dedicated `dev` triclinic **cell construction** passes 40/40
+  independent-reference checks with the corrected combined patch
+  (24 ordinary-radius controls and 16 large-radius cases).
+  The unpatched source passes the 24 controls but fails the 16
+  large-radius comparisons. An earlier harness used `iterator != end()`
+  while `compute_cell` dynamically created image particles; it
+  accidentally traversed generated image blocks and produced
+  unrelated internal index errors. The corrected test captures only
+  primary-site indices before computing cells. This finite test is
+  **not** a universal triclinic correctness guarantee.
   See [`docs/dev-branch.md`](docs/dev-branch.md).
 
 ## Repository layout and provenance

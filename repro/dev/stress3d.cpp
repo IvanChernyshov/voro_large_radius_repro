@@ -122,11 +122,25 @@ std::vector<Shape> actual(const std::vector<Site>& sites,int mask,int blocks,boo
         const bool skew=mask==9;
         voro::container_triclinic_poly con(10,skew?2.3:0,10,skew?-1.7:0,skew?3.1:0,10,blocks,blocks,blocks,8);
         for(size_t k=0;k<sites.size();++k){int i=reverse?int(sites.size()-1-k):int(k);const Site& s=sites[i];con.put(i,s.x,s.y,s.z,s.r);}
+        // Snapshot original primary-domain sites before compute_cell()
+        // constructs image particles. Iterating with != end() while adding
+        // images can descend into image blocks and trigger false native errors.
+        struct Handle {int ijk,q,id;};
+        std::vector<Handle> originals;
+        for(int k=con.ez;k<con.wz;++k)
+          for(int j=con.ey;j<con.wy;++j)
+            for(int i=0;i<blocks;++i) {
+                const int ijk=i+blocks*(j+con.oy*k);
+                for(int q=0;q<con.co[ijk];++q) {
+                    const int id=con.id[ijk][q];
+                    if(id<0||id>=int(out.size())){std::cerr<<"ORACLE_INVALID id\n";std::exit(2);}
+                    originals.push_back(Handle{ijk,q,id});
+                }
+            }
+        if(originals.size()!=sites.size()){std::cerr<<"ORACLE_INVALID primary site count\n";std::exit(2);}
         voro::voronoicell_neighbor_3d c;
-        for(auto it=con.begin();it!=con.end();++it){
-            const int id=con.id[it->ijk][it->q];
-            if(con.compute_cell(c,it)){if(id<0||id>=int(out.size())){std::cerr<<"ORACLE_INVALID id\n";std::exit(2);}out[id]=shape(c,sites[id]);}
-        }
+        for(const Handle& site:originals)
+            if(con.compute_cell(c,site.ijk,site.q))out[site.id]=shape(c,sites[site.id]);
     }
     return out;
 }

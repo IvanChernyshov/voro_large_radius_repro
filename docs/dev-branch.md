@@ -66,52 +66,57 @@ The 2D A9 reference independently clips polygons in `long double`; the 3D A9 ref
 
 [CI run 41385014955](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41385014955) confirms the selected A1–A3/A9/A10 results on Linux GCC and Clang and on both macOS architectures.
 
-### Separate tri-periodic construction diagnostic
+### Dedicated triclinic 3D cell construction: corrected diagnostic
 
-In **dev only**, the attempt to extend A9 to the dedicated `container_triclinic_poly::compute_cell()` route encountered a **native VOROPP_INTERNAL_ERROR (exit 3)** with the diagnostic:
+The first attempt to extend A9 to `container_triclinic_poly::compute_cell()`
+produced `VOROPP_INTERNAL_ERROR`: `Constructing periodic image for nonexistent
+point`, including for ordinary radii. The subsequent isolated diagnostic
+(commit `5bbe039`) reported 40/40 such errors for **each** source variant.
+**Those results were not valid evidence of defective triclinic cell construction.**
 
-```text
-voro++: Constructing periodic image for nonexistent point
-```
+**Root cause in the test harness:** the dedicated test loop used
+`for(auto it=con.begin(); it!=con.end(); ++it)`, computing each cell
+while periodic images were dynamically added to the same container.
+Unlike the upstream source's `it < end()` convention, the inequality
+condition can continue into *new image blocks*. The temporary-source
+index trace ([CI run 41400336310](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41400336310))
+records a single-site case with a non-primary `ck=3` and an attempted
+`qk=5` when the valid z-block indices are `0..4`. This explains the
+reported fatal: the harness erroneously requested computation of a
+periodic-image cell as a new primary site.
 
-The very first tested case is *not* a huge-radius case: nine sites with ordinary nonuniform radii (A9 seed 0, pattern 0), the **orthogonal** dedicated periodic lattice (mask 8), one block per axis, original insertion order. The message occurs in **both** the original and patched dev code. It is not evidence of a regression caused by the proposed radius patch and is outside the present defect claim. The code path uses the dev-specific triclinic image-generation and cell-computation infrastructure.
+The corrected `repro/dev/triclinic_probe.cpp` (commit `484c96f`)
+snapshots primary-domain particle indices **before** any cell construction,
+then calls `compute_cell(c, ijk, q)` for just those original particles.
+Independent references enumerate periodic-image cutting planes and
+require convergence of the `K=1` and `K=2` image windows; individual
+cell volumes and total unit-cell volume are checked.
 
-As a result, A9 dev acceptance intentionally covers **2D 384 and 3D 768 rectangular configurations only**. The dedicated triclinic A9 scenario remains callable with `VORO_DEV_A9_TRICLINIC=1` for isolated diagnosis. The dev A10 **triclinic owner-query path remains in its full 38,880-query test**, and it passed for the corrected dev.
+The targeted diagnostic includes a one-site ordinary-radius system,
+two ordinary-radius sites, two equal `1e8` radii, adjacent binary64
+radii near `1e8`, and nine sites with ordinary radii, crossed with
+orthogonal/skew dedicated lattices, grid sizes `1`/`3` and insertion
+orders. [CI run 41401009657](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41401009657)
+reports:
 
-Do not report the dev patch as having passed a dedicated triclinic **cell-construction** test.
+| Dedicated 3D scenario | Unmodified dev | Combined-patched dev |
+|---|---:|---:|
+| Ordinary radii (one site, two sites, nine sites) | 24/24 pass | 24/24 pass |
+| Equal/near-equal large radii (two sites) | 0/16 pass | 16/16 pass |
+| Native internal errors with primary-site enumeration | 0 | 0 |
+| **Total independent-reference comparisons** | **24/40 pass** | **40/40 pass** |
 
-### Isolated dedicated-cell diagnostic (2 November 2026)
+The original `!= end()` diagnostic remains available via
+`VORO_DEV_TRICLINIC_LEGACY_ITERATOR=1` in the isolated probe and a
+separate temporary-source tracing runner. It is **not** used for the
+geometric acceptance results.
 
-A further read-only comparison of the **original** and **combined-patched** dev sources is archived by
-[CI run 41397139610](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41397139610)
-(commit `5bbe039`). The standalone `repro/dev/triclinic_probe.cpp` and
-`scripts/probe-dev-triclinic.sh` execute each case in its own process, so a native
-fatal error cannot hide later cases. Five scenarios (one ordinary-radius site;
-two ordinary-radius sites; two equal large radii; two neighboring binary64 radii;
-and the original nine-site ordinary-radius configuration) are crossed with
-orthogonal/skew dedicated lattices, block grids `1`/`3` and insertion orders.
-
-| Variant | Correct dedicated `compute_cell` cases | Same internal image-index error | Unexpected exits |
-|---|---:|---:|---:|
-| Unmodified dev | 0/40 | 40/40 | 0 |
-| Combined-patched dev | 0/40 | 40/40 | 0 |
-
-Every failing case reports `VOROPP_INTERNAL_ERROR` (native exit status 3):
-`Constructing periodic image for nonexistent point`. Crucially, **even a
-single site with a small radius fails** in this specific diagnostic setup.
-These observations establish that the numerical patch is not needed to
-trigger the native error. They do **not** establish the underlying cause,
-the correctness of the test setup under every dev API convention, or that
-all possible triclinic inputs fail. Zero geometry mismatches in this
-diagnostic means **zero completed geometry comparisons**, not forty
-successful comparisons.
-
-This job is explicitly **diagnostic-only**, not part of the numerical
-acceptance claim. The combined patch continues to pass the dedicated
-triclinic **owner-query** cases within A10; it has **not** been validated
-for dedicated triclinic **cell construction**. Further analysis of the
-independent failure, if undertaken, must keep this distinction explicit.
-
+This is positive evidence that the radius correction also works in
+**dedicated triclinic cell construction**, for the 40 explicitly tested
+configurations. The larger nine-site A9 sweep was initially excluded
+only because its dedicated branch used the same unsafe `!= end()`
+iteration pattern; corrected A9 coverage is being assessed separately.
+The A10 **triclinic owner-query** path already passes independently.
 
 ## 5. Multithreading check
 
