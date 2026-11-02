@@ -69,7 +69,10 @@ if [[ "$SUITE" == extended ]]; then
       grep -E "^SUMMARY (A10|A9|dimension=)" "$logfile" || true
       if [[ "$stem" == stress ]]; then
         expected_cases=384
-        if [[ "$dim" == 3 ]]; then expected_cases=960; fi
+        if [[ "$dim" == 3 ]]; then
+          expected_cases=960
+          if [[ -n "${VORO_DEV_A9_RECT_ONLY+x}" ]]; then expected_cases=768; fi
+        fi
         if ! grep -Eq "^SUMMARY A9 dim=${dim} cases=${expected_cases} failures=[0-9]+ controls=0$" "$logfile"; then
           echo "dev $MODE ${dim}D: missing expected full A9 matrix or ordinary-radius control failure" >&2
           grep -E "^(ORACLE_|SUMMARY A9)" "$logfile" | head -20 >&2 || true
