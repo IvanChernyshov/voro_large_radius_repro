@@ -69,6 +69,9 @@ if [[ "$SUITE" == extended ]]; then
       grep -E "^SUMMARY (A10|A9|dimension=)" "$logfile" || true
       if [[ "$rc" -gt 1 ]] || [[ "$MODE" == combined && "$rc" -ne 0 ]]; then
         echo "dev $MODE ${dim}D $stem: control/oracle/candidate regression (exit $rc)." >&2
+        if [[ "$rc" -gt 1 ]]; then
+          cat "$logfile" >&2
+        fi
         grep -E "^(CASE |WRONG |ORACLE_|SUMMARY )" "$logfile" | head -45 >&2 || true
         exit 1
       fi
