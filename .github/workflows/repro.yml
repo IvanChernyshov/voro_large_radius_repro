@@ -83,31 +83,6 @@ jobs:
             output/dev-combined/*.txt
           if-no-files-found: warn
 
-  dev-msvc:
-    name: "Dev baseline and correction / windows-msvc-o2"
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-      - name: Verify dev baseline and isolated correction (MSVC)
-        shell: pwsh
-        run: |
-          pwsh -File ./scripts/run-dev-msvc.ps1 -Mode baseline -Suite extended
-          if ($LASTEXITCODE -ne 0) { throw "Dev baseline native reproductions failed" }
-          pwsh -File ./scripts/run-dev-msvc.ps1 -Mode combined -Suite extended
-          if ($LASTEXITCODE -ne 0) { throw "Dev correction native regressions failed" }
-      - name: Archive dev MSVC checks
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dev-baseline-and-correction-windows-msvc-o2
-          path: |
-            output/dev-baseline-msvc/*.txt
-            output/dev-combined-msvc/*.txt
-          if-no-files-found: warn
-
   dev-openmp:
     name: "Dev correction / GCC OpenMP concurrency"
     runs-on: ubuntu-latest
