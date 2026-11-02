@@ -59,14 +59,14 @@ done
 end_of_minimal=1
 if [[ "$SUITE" == extended ]]; then
   for dim in 2 3; do
-    for stem in arithmetic owner; do
+    for stem in arithmetic owner stress; do
       src="$ROOT/repro/dev/${stem}${dim}d.cpp"
       exe="$BUILD/${stem}${dim}d"
       logfile="$OUTPUT/${dim}d_${stem}.txt"
       "$CXX" $CXXFLAGS -pthread -I"$VORO/src" "$src" "$BUILD/voro-dev.o" -o "$exe"
       rc=0
       "$exe" > "$logfile" 2>&1 || rc=$?
-      grep -E "^SUMMARY (A10|dimension=)" "$logfile" || true
+      grep -E "^SUMMARY (A10|A9|dimension=)" "$logfile" || true
       if [[ "$rc" -gt 1 ]] || [[ "$MODE" == combined && "$rc" -ne 0 ]]; then
         echo "dev $MODE ${dim}D $stem: control/oracle/candidate regression (exit $rc)." >&2
         grep -E "^(CASE |WRONG |ORACLE_|SUMMARY )" "$logfile" | head -45 >&2 || true
