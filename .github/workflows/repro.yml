@@ -6,6 +6,49 @@ on:
   workflow_dispatch:
 
 jobs:
+  minimal-linux:
+    name: "Minimal native reproduction / Linux GCC"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original failures and combined correction
+        shell: bash
+        run: bash ./scripts/reproduce.sh
+      - name: Preserve minimal measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimal-linux-gcc
+          path: |
+            output/baseline/*_minimal.txt
+            output/combined-02-03/*_minimal.txt
+          if-no-files-found: error
+
+  minimal-msvc:
+    name: "Minimal native reproduction / Windows MSVC"
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Verify original failures and combined correction
+        shell: pwsh
+        run: |
+          pwsh -File ./scripts/run-msvc.ps1 -Mode baseline -Suite minimal
+          if ($LASTEXITCODE -ne 0) { throw "Original minimal reproduction failed" }
+          pwsh -File ./scripts/run-msvc.ps1 -Mode combined-02-03 -Suite minimal
+          if ($LASTEXITCODE -ne 0) { throw "Combined minimal regression failed" }
+      - name: Preserve minimal measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimal-windows-msvc
+          path: |
+            output/baseline/*_minimal.txt
+            output/combined-02-03/*_minimal.txt
+          if-no-files-found: error
+
   reproduce:
     name: "${{ matrix.platform.tag }} / ${{ matrix.profile }}"
     runs-on: ${{ matrix.platform.os }}
@@ -16,8 +59,8 @@ jobs:
         platform:
           - {os: ubuntu-latest, tag: linux-gcc-o2, cxx: g++, flags: "-O2 -std=c++11"}
           - {os: ubuntu-latest, tag: linux-clang-o3, cxx: clang++, flags: "-O3 -std=c++11"}
-          - {os: macos-15, tag: macos-clang-o2, cxx: clang++, flags: "-O2 -std=c++11"}
-          - {os: macos-15-arm64, tag: macos-arm64-clang-o3, cxx: clang++, flags: "-O3 -std=c++11"}
+          - {os: macos-15, tag: macos-arm64-clang-o2, cxx: clang++, flags: "-O2 -std=c++11"}
+          - {os: macos-15-intel, tag: macos-intel-clang-o3, cxx: clang++, flags: "-O3 -std=c++11"}
     steps:
       - uses: actions/checkout@v4
       - name: Environment and compiler
@@ -25,6 +68,10 @@ jobs:
         run: |
           uname -a
           ${{ matrix.platform.cxx }} --version
+          case "${{ matrix.platform.tag }}" in
+            macos-arm64-*) test "$(uname -m)" = arm64 ;;
+            macos-intel-*) test "$(uname -m)" = x86_64 ;;
+          esac
       - name: Compile and execute native tests
         shell: bash
         env:

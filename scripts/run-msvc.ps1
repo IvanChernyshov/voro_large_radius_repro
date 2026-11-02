@@ -1,8 +1,14 @@
 # Standalone MSVC harness for the pinned Voro++ reproduction study.
 # Requires a Visual Studio Developer Command Prompt / Developer PowerShell.
-param([ValidateSet("baseline","candidate","candidate-02","candidate-03","combined-02-03")][string]$Mode="baseline")
+param(
+    [ValidateSet("baseline","candidate","candidate-02","candidate-03","combined-02-03")][string]$Mode="baseline",
+    [ValidateSet("full","minimal")][string]$Suite="full"
+)
 Set-StrictMode -Version Latest
 $ErrorActionPreference="Stop"
+if($Suite -eq "minimal" -and $Mode -notin @("baseline","combined-02-03")) {
+    throw "Minimal reproduction supports baseline and combined-02-03 only."
+}
 $Root=(Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Voro=Join-Path $Root "vendor/voro"
 $Build=Join-Path $Root "build/$Mode"
@@ -49,6 +55,8 @@ try {
     }
     Write-Host "mode=$Mode compiler=MSVC flags=/O2 /std:c++14"
     $Inc=@{}; $Obj=@{}
+    $Drivers=@("repro","arithmetic","locate","coverage","unequal","stress","owner","extreme","exponent")
+    if($Suite -eq "minimal") {$Drivers=@("minimal")}
     foreach($Dim in @(2,3)) {
         if($Dim -eq 2) {
             $Inc[$Dim]=Join-Path $Voro "2d/src"
@@ -60,7 +68,7 @@ try {
         $Obj[$Dim]=Join-Path $Build "voro$($Dim)d.obj"
         Compile -Options @("/nologo","/EHsc","/O2","/std:c++14",
             "/I$($Inc[$Dim])","/c","/Fo$($Obj[$Dim])","/Tp$Source")
-        foreach($Stem in @("repro","arithmetic","locate","coverage","unequal","stress","owner","extreme","exponent")) {
+        foreach($Stem in $Drivers) {
             $Name="$($Stem)$($Dim)d"
             $Driver=Join-Path $Root "repro/$Name.cpp"
             $Exe=Join-Path $Build "$Name.exe"
@@ -68,6 +76,31 @@ try {
                 "/I$($Inc[$Dim])",$Driver,$Obj[$Dim],"/Fe$Exe")
         }
     }
+    if($Suite -eq "minimal") {
+        # A successful minimal run requires both explicit diagnostic FAILs
+        # on the original and both explicit PASSes on the combined patch.
+        $Expected=if($Mode -eq "baseline") {"FAIL"} else {"PASS"}
+        $ExpectedExit=if($Mode -eq "baseline") {1} else {0}
+        $ExpectedFailures=if($Mode -eq "baseline") {2} else {0}
+        foreach($Dim in @(2,3)) {
+            $Log=Join-Path $Output "$($Dim)d_minimal.txt"
+            $Code=RunNative -Name "minimal$($Dim)d" -Params @() -Log $Log
+            Get-Content -LiteralPath $Log | ForEach-Object {Write-Host $_}
+            if($Code -ne $ExpectedExit) {
+                throw "Minimal $Mode $($Dim)D: exit=$Code, expected=$ExpectedExit"
+            }
+            foreach($Check in @("geometry","owner")) {
+                $Pattern="^RESULT dim=$Dim check=$Check status=$Expected\s"
+                if(-not (Select-String -LiteralPath $Log -Pattern $Pattern -Quiet)) {
+                    throw "Minimal $Mode $($Dim)D: missing expected $Expected result for $Check"
+                }
+            }
+            if(-not (Select-String -LiteralPath $Log -Pattern "^SUMMARY minimal dim=$Dim failed_checks=$ExpectedFailures$" -Quiet)) {
+                throw "Minimal $Mode $($Dim)D: summary/check mismatch"
+            }
+        }
+        Write-Host "SUMMARY minimal mode=$Mode status=PASS expected_native_result=$Expected"
+    } else {
     $RequiredFailures=0; $KnownFailures=0
     $Cases=@(
         @("small","1","1","1"),
@@ -213,6 +246,7 @@ try {
         }
     }
     Write-Host "MSVC run completed. Diagnostic failures are NOT accepted geometry."
+    }
 } finally {
     if($null -ne $TempRoot -and (Test-Path -LiteralPath $TempRoot)) {
         Remove-Item -LiteralPath $TempRoot -Recurse -Force

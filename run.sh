@@ -3,8 +3,17 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="${1:-baseline}"
+SUITE="${2:-full}"
 if [[ "$MODE" != baseline && "$MODE" != candidate && "$MODE" != candidate-02 && "$MODE" != candidate-03 && "$MODE" != combined-02-03 ]]; then
-  echo "Usage: bash ./run.sh [baseline|candidate|candidate-02|candidate-03|combined-02-03]" >&2
+  echo "Usage: bash ./run.sh [baseline|candidate|candidate-02|candidate-03|combined-02-03] [full|minimal]" >&2
+  exit 2
+fi
+if [[ "$SUITE" != full && "$SUITE" != minimal ]]; then
+  echo "Unknown suite: $SUITE (expected full or minimal)" >&2
+  exit 2
+fi
+if [[ "$SUITE" == minimal && "$MODE" != baseline && "$MODE" != combined-02-03 ]]; then
+  echo "Minimal reproduction supports baseline and combined-02-03 only." >&2
   exit 2
 fi
 ORIGINAL="$ROOT/vendor/voro"
@@ -32,6 +41,45 @@ echo "mode=$MODE compiler=$CXX flags=$CXXFLAGS"
 # This keeps the growing regression suite fast without changing the source.
 "$CXX" $CXXFLAGS -I"$VORO/2d/src" -c "$VORO/2d/src/voro++_2d.cc" -o "$BUILD/voro2d.o"
 "$CXX" $CXXFLAGS -I"$VORO/src" -c "$VORO/src/voro++.cc" -o "$BUILD/voro3d.o"
+# The minimal suite deliberately expects both original failures, not merely a
+# nonzero process status. It rejects crashes, missing output, changed results,
+# and regressions in the combined candidate.
+if [[ "$SUITE" == minimal ]]; then
+  expected=FAIL
+  expected_rc=1
+  expected_failures=2
+  if [[ "$MODE" == combined-02-03 ]]; then
+    expected=PASS
+    expected_rc=0
+    expected_failures=0
+  fi
+  for dim in 2 3; do
+    if [[ "$dim" == 2 ]]; then VORO_INC="$VORO/2d/src"; else VORO_INC="$VORO/src"; fi
+    "$CXX" $CXXFLAGS -I"$VORO_INC" \
+      "$ROOT/repro/minimal${dim}d.cpp" "$BUILD/voro${dim}d.o" -o "$BUILD/minimal${dim}d"
+    logfile="$OUTPUT/${dim}d_minimal.txt"
+    rc=0
+    "$BUILD/minimal${dim}d" > "$logfile" 2>&1 || rc=$?
+    cat "$logfile"
+    if [[ "$rc" -ne "$expected_rc" ]]; then
+      echo "Minimal $MODE ${dim}D: unexpected process status $rc (expected $expected_rc)." >&2
+      exit 1
+    fi
+    for check in geometry owner; do
+      if ! grep -Eq "^RESULT dim=${dim} check=${check} status=${expected}[[:space:]]" "$logfile"; then
+        echo "Minimal $MODE ${dim}D: $check did not produce the required $expected outcome." >&2
+        exit 1
+      fi
+    done
+    if ! grep -qx "SUMMARY minimal dim=${dim} failed_checks=${expected_failures}" "$logfile"; then
+      echo "Minimal $MODE ${dim}D: summary/check count mismatch." >&2
+      exit 1
+    fi
+  done
+  echo "SUMMARY minimal mode=$MODE status=PASS expected_native_result=$expected"
+  exit 0
+fi
+
 "$CXX" $CXXFLAGS -I"$VORO/2d/src" "$ROOT/repro/repro2d.cpp" "$BUILD/voro2d.o" -o "$BUILD/repro2d"
 "$CXX" $CXXFLAGS -I"$VORO/src" "$ROOT/repro/repro3d.cpp" "$BUILD/voro3d.o" -o "$BUILD/repro3d"
 violations=0
