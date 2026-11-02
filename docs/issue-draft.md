@@ -1,54 +1,80 @@
-# Draft for Voro++ issue — NOT POSTED
+# Working draft: Voro++ large-radius cancellation
 
-## Title
+This draft collects the reproducible observations for a possible
+upstream issue. The wording and scope remain open for review.
 
-Large equal radii cause missing radical Voronoi cell volume in 2D and 3D (`r_scale` cancellation)
+## Suggested title
 
-## Summary
+Large radii cause incorrect radical cell geometry and power-site lookup in 2D/3D
 
-In the original Voro++ `master` commit `b0dac575`, finite and representable radii can produce **incorrect native power-diagram geometry**, even for two sites in a nonperiodic unit box and with exactly equal radii. The failure occurs directly in native Voro++ and is reproduced using standalone C++.
+## Observed behavior
 
-The repository provides a full unchanged Voro++ source snapshot, minimal native reproducers and a CI matrix.
+In the pinned Voro++ `master` (`b0dac575`) and `dev` (`61099f68`)
+revisions, the native radical tessellation can give incorrect results
+when radii are large compared with the site separations.
 
-## Minimal inputs
+For example, in a nonperiodic unit square, consider two sites at
+`(0.25,0.5)` and `(0.75,0.5)`, each with radius `1e8`.
+Equal radii must give the ordinary bisector `x=0.5` and cell areas
+`0.5,0.5`. Both unmodified versions instead return `0.25,0.25`.
+The analogous 3D unit-cube example gives volumes `0.25,0.25`.
 
-**2D:** unit box, sites (0.25,0.5) and (0.75,0.5), both radii 10⁸, radical container. Expected: two halves of area 0.5 each, separated at x=0.5. Observed: only 0.5 total area and a 0.5-wide gap.
+In the same configurations, `find_voronoi_cell` at `x=0.74`
+returns site `0` (`x=0.25`) instead of site `1` (`x=0.75`).
+Small-radius controls pass.
 
-**3D:** analogous sites (0.25,0.5,0.5) and (0.75,0.5,0.5) in a unit cube. Expected two cells of volume 0.5; observed total ~0.5.
-
-**Periodic sanity check:** a single site of radius 10⁸ in a unit fully periodic square/cube must own the whole fundamental domain; original native computation instead reports ~0.5 for one block per axis. The effect also depends on block grid and coordinate/domain scale.
-
-With both radii set to 1.0, all these checks pass.
-
-## Reproduction commands
+## Reproduce
 
 ```bash
-git clone https://github.com/IvanChernyshov/voro_large_radius_repro
+git clone https://github.com/IvanChernyshov/voro_large_radius_repro.git
 cd voro_large_radius_repro
-bash ./run.sh baseline
-bash ./run.sh candidate
+bash ./scripts/reproduce.sh        # master
+bash ./scripts/reproduce-dev.sh    # dev
 ```
 
-The first command runs unmodified Voro++ and records expected high-radius failures. The second runs an **experimental**, separate arithmetic candidate, never modifying the original source.
+These C++11 runners compare the original and experimentally patched
+source, reporting the expected four native errors and four corrected
+results. They apply patches to temporary copies of the pinned
+upstream sources. Additional multi-site, periodic and cross-platform
+tests are collected in the same repository.
 
-## Source-level hypothesis
+## Numerical explanation
 
-In `radius_poly::r_scale` (2D and 3D), the original expression computes
+Two separate routes lose precision:
 
-```cpp
-rs + r_rad - r_other*r_other
-```
+1. Cell construction uses `rs + r_i² - r_j²` with separately
+   rounded squared radii. At equal radii near `1e8`, the geometric
+   term can be rounded away. The tested correction replaces the
+   difference with `(r_i-r_j)*(r_i+r_j)` in both `r_scale` and
+   `r_scale_check`.
+2. Owner search compares `||x-p_i||²-r_i²`, then uses
+   `r_max_add` in the block-pruning threshold. The tested correction
+   instead compares `||x-p_i||²+(R-r_i)*(R+r_i)`, where
+   `R=max_i r_i` for nonnegative radii, and adjusts
+   `r_max_add` to match the shifted score.
 
-with r_rad = r_current². When both radii equal 10⁸, the exact radius difference is zero but the intermediate `rs + 10^16` loses a geometric term of order one in binary64 arithmetic. In this example, a displacement of 0.25 becomes 0. A candidate that evaluates the radius difference **before** adding rs recovers the expected geometry on the test matrix.
+The two corrections are supplied as a combined patch, adapted
+separately for `master` and `dev`. They passed the documented
+finite test matrices, including the expanded `dev` dedicated
+triclinic checks.
 
-This explains a concrete failure mechanism, but it is **not yet a proof** that the candidate covers all numerical paths or huge, genuine squared-radius differences.
+## Evidence and limits
 
-## Request
+[Current cross-platform CI run](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41401868846),
+[combined `master` report](test-stage10-combined.md), and
+[`dev` comparison](dev-branch.md) include results and source
+revisions. A9 checks individual cells against direct clipping;
+A10 checks owners against enumerated power distances and images.
 
-Could the original Voro++ radical plane-displacement arithmetic be reviewed for cancellation at very large common radii, and for any other affected paths? The linked repository provides standalone C++ evidence and a separated candidate. The objective is to make the expected arithmetic invariant visible and assess a safe, minimal repair without introducing a dependence on newer C++ language standards.
+The owner-search reasoning assumes nonnegative radii. Intermediate
+overflow (e.g. at `1e308`), negative-radius inputs and
+near-degenerate comparisons are outside the established correction
+range; the corresponding observations are documented separately.
 
-## Environment and evidence
+## Question for the maintainer
 
-Source version: original master SHA `b0dac575a47af0f90b5b100e6dc199a493c7cb83`. See GitHub Actions matrix and artifacts for exact runner/compiler versions and per-case measurements.
-
-**Do not submit this draft until the candidate and original source have also been evaluated in the GitHub CI matrix.**
+Would a factorized radius difference in the cell-construction path
+and a consistently shifted owner-search score be appropriate for
+Voro++? The repository contains the minimal reproductions, separate
+patches for both source layouts, and the regression results needed
+to review the change.

@@ -1,21 +1,16 @@
 # Licensing
 
-The standalone original test programs, build runners and documentation authored
-for this reproduction repository are provided under the **MIT License** in
-[LICENSE](LICENSE).
+The tests, runners and documentation written for this repository
+are provided under the [MIT License](LICENSE).
 
-The unmodified upstream Voro++ snapshots in [`vendor/voro/`](vendor/voro/)
-(`master`) and [`vendor/voro-dev/`](vendor/voro-dev/) (`dev`) each retain their
-**own upstream copyright and license**, respectively in
-[`vendor/voro/LICENSE`](vendor/voro/LICENSE) and
-[`vendor/voro-dev/LICENSE`](vendor/voro-dev/LICENSE). The repository's MIT license
-does not replace, relicense or override the Voro++ license.
+The two unchanged Voro++ source snapshots retain the upstream
+copyright and license:
+[`vendor/voro/LICENSE`](vendor/voro/LICENSE) for `master` and
+[`vendor/voro-dev/LICENSE`](vendor/voro-dev/LICENSE) for `dev`.
 
-Files under [`patches/`](patches/) are proposed modifications to upstream
-Voro++. Patch context and any existing upstream code remain covered by
-Voro++'s original license. The original contributions contained in the
-patches are offered permissively under the MIT License, subject to the
-upstream terms applicable when they are applied to Voro++.
+The patch files contain proposed changes to Voro++. Their original
+contributions are offered under the MIT License; upstream code and
+patch context remain subject to the original Voro++ license terms.
 
-The original source subtree is kept byte-for-byte unchanged; see
-[PROVENANCE.md](PROVENANCE.md) for the pinned upstream revision.
+The pinned upstream revisions and source integrity checks are
+listed in [PROVENANCE.md](PROVENANCE.md).

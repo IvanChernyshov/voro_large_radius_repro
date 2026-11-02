@@ -1,7 +1,16 @@
 # Reproduction evidence
 
-Native output files are generated under `output/baseline/` and `output/candidate/`; they are deliberately ignored by Git. GitHub Actions uploads each profile's output as a workflow artifact together with the run's recorded environment and compiler version.
+The native test runners write measurements to `output/<profile>/`
+for the pinned `master` and to `output/dev-baseline/` and
+`output/dev-combined/` for `dev`. Git ignores these generated files;
+GitHub Actions preserves the test logs as workflow artifacts.
 
-Source findings and the precise expectations are maintained in [the investigation](../docs/findings.md). The candidate patch is **not** merged into the original Voro++ source tree.
+Baseline jobs compare native results with analytical or independently
+computed references and record the known large-radius mismatches.
+A successful baseline job indicates that its controls and expected
+failure checks behaved as specified. The combined-patch jobs require
+the supported regression cases to match their references.
 
-Do not treat a successful Actions job in the baseline profile as meaning all geometries were valid: that profile intentionally keeps known extreme failures informational while requiring control cases to pass.
+The numerical results and test definitions are summarized in the
+[README](../README.md), [combined `master` report](../docs/test-stage10-combined.md),
+and [`dev` report](../docs/dev-branch.md).
