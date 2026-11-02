@@ -85,7 +85,7 @@ try {
                     Get-Content -LiteralPath $Log |
                         Where-Object {$_ -match "ORACLE_|FAIL_CASE|WRONG|SUMMARY |voro\+\+:" } |
                         Select-Object -Last 35 | ForEach-Object {Write-Host $_}
-                    throw "Dev $Mode $Dim D $Stem: native failure $Code"
+                    throw "Dev $Mode $Dim D ${Stem}: native failure $Code"
                 }
             }
         }
