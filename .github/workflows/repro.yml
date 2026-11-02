@@ -49,6 +49,38 @@ jobs:
             output/combined-02-03/*_minimal.txt
           if-no-files-found: error
 
+  dev-baseline-minimal:
+    name: "Dev branch minimal / ${{ matrix.platform.tag }}"
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {os: ubuntu-latest, tag: linux-gcc-o2, cxx: g++, flags: "-O2 -std=c++11"}
+          - {os: ubuntu-latest, tag: linux-clang-o3, cxx: clang++, flags: "-O3 -std=c++11"}
+          - {os: macos-15, tag: macos-arm64-clang-o2, cxx: clang++, flags: "-O2 -std=c++11"}
+          - {os: macos-15-intel, tag: macos-intel-clang-o3, cxx: clang++, flags: "-O3 -std=c++11"}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and reproduce native dev errors
+        shell: bash
+        env:
+          CXX: ${{ matrix.platform.cxx }}
+          CXXFLAGS: ${{ matrix.platform.flags }}
+        run: |
+          uname -a
+          $CXX --version
+          if [[ "${{ matrix.platform.tag }}" == macos-arm64-* ]]; then test "$(uname -m)" == arm64; fi
+          if [[ "${{ matrix.platform.tag }}" == macos-intel-* ]]; then test "$(uname -m)" == x86_64; fi
+          bash ./scripts/run-dev-minimal.sh
+      - name: Save dev branch baseline measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-minimal-${{ matrix.platform.tag }}
+          path: output/dev-baseline/*_minimal.txt
+          if-no-files-found: warn
+
   reproduce:
     name: "${{ matrix.platform.tag }} / ${{ matrix.profile }}"
     runs-on: ${{ matrix.platform.os }}
