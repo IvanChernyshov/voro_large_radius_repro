@@ -1,6 +1,6 @@
-// dev-only OpenMP regression: simultaneous cell construction and owner lookups.
-// The combined patch must retain per-invocation radius state, not shared members.
-// Run only with -fopenmp; ordinary serial correctness is checked elsewhere.
+// OpenMP comparison of concurrent and sequential dev cell/owner operations.
+// The correction carries the current radius in per-call state.
+// Compile with -fopenmp; geometry checks are covered by A9/A10.
 #include <voro++.hh>
 #include <omp.h>
 #include <algorithm>

@@ -1,6 +1,6 @@
-// Stage 6: nonuniform-radius power cells across rectangular and skew 3D lattices.
-// Analytic 1D oracle for rectangular cells; exhaustive direct-plane oracle
-// (no radius_poly or block-pruning) for the skew periodic container.
+// A8: unequal-radius 3D cells in rectangular and skew periodic lattices.
+// Uses analytical interval references for rectangular cases and direct
+// clipping for dedicated periodic cases, bypassing block pruning.
 #include <voro++.hh>
 #include <algorithm>
 #include <cmath>

@@ -1,5 +1,5 @@
-// Non-blocking numerical scope diagnostics for Voro++ radius_poly.
-// Works with original 2D or 3D headers, without changing library code.
+// Scalar rounding and overflow probes of Voro++ radius_poly methods.
+// Compiles against the original 2D or 3D header.
 #include "rad_option.hh"
 #include <cmath>
 #include <iomanip>
