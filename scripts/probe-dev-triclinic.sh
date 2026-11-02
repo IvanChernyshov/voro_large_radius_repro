@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Scope-only diagnostic. Original dev may fail in dedicated periodic image creation.
-# Known native errors and geometry mismatches are recorded, not acceptance-gated.
+# Dedicated triclinic cell comparisons for the original and patched dev sources.
+# Per-case discrepancies are recorded; the full A9 gate runs separately.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CXX="${CXX:-c++}"
@@ -42,7 +42,7 @@ for mode in baseline combined; do
       done
     done
   done
-  # Broad A9 nine-site dedicated-triclinic sweep: diagnostic until reviewed.
+  # Record the expanded A9 alongside the isolated 40-case comparisons.
   "$CXX" $CXXFLAGS -pthread -I"$TMP/voro/src" "$ROOT/repro/dev/stress3d.cpp" "$BUILD/voro-dev.o" -o "$BUILD/stress3d"
   stress_log="$OUT/$mode/A9_full_dedicated.txt"
   stress_rc=0

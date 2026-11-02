@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Diagnostic-only: trace out-of-range image blocks from the legacy != end() test iteration.
-# Instrument ONLY a temporary copy of the original upstream dev snapshot.
+# Trace out-of-range indices caused by the old test loop using != end().
+# Instrument a temporary copy of the pinned dev source.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(mktemp -d)"

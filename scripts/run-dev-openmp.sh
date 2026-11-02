@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OpenMP concurrency regression for the isolated dev-branch numerical correction.
+# Concurrent cell and owner-query checks for the patched dev sources.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CXX="${CXX:-g++}"

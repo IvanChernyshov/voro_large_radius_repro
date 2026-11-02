@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Dev branch native minimal reproduction, with an independent, isolated patch.
+# Pinned Voro++ dev baseline/combined regression runner.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODE="${1:-baseline}"
