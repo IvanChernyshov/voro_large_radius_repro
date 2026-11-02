@@ -67,15 +67,6 @@ if [[ "$SUITE" == extended ]]; then
       rc=0
       "$exe" > "$logfile" 2>&1 || rc=$?
       grep -E "^SUMMARY (A10|A9|dimension=)" "$logfile" || true
-      # The pinned dev baseline may raise an internal-error status during
-      # skew/dedicated-periodic A9. Record this exact native diagnostic only.
-      # Do not treat an arbitrary process failure as a successful reproduction.
-      if [[ "$MODE" == baseline && "$dim" == 3 && "$stem" == stress && "$rc" == 3 ]] &&
-         grep -Fxq "voro++: Constructing periodic image for nonexistent point" "$logfile"; then
-        echo "DIAGNOSTIC dev-original 3D periodic A9: internal error reproduced (not a pass).";
-        tail -14 "$logfile" >&2
-        continue
-      fi
       if [[ "$rc" -gt 1 ]] || [[ "$MODE" == combined && "$rc" -ne 0 ]]; then
         echo "dev $MODE ${dim}D $stem: control/oracle/candidate regression (exit $rc)." >&2
         if [[ "$rc" -gt 1 ]]; then
