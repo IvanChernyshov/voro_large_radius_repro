@@ -1,5 +1,5 @@
 // A12: equal but extreme finite radii, native power-cell construction.
-// 1e308 is deliberately diagnostic, NOT an accepted numerical regime.
+// The 1e308 result is logged separately from the three accepted exponents.
 #include <voro++_2d.hh>
 #include <algorithm>
 #include <cmath>

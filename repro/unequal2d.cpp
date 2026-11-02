@@ -1,5 +1,5 @@
-// Stage 6: weighted multi-site 2D cell geometry, with an analytic 1D power-cell oracle.
-// Source Voro++ is not changed. This is test-only C++11.
+// A8: 2D multi-site power cells with an analytical one-dimensional oracle.
+// Includes unequal radii, periodicity and empty cells.
 #include <voro++_2d.hh>
 #include <algorithm>
 #include <cmath>

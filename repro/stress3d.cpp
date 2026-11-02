@@ -1,7 +1,6 @@
-// Stage 7: noncoplanar weighted 3D cells vs exhaustive direct-plane clipping.
-// The reference uses Voro++'s low-level convex clipping primitive, but does
-// not call radius_poly, compute_cell, periodic image generators, or block pruning.
-// Deterministic C++11 native test with no external dependencies.
+// A9: irregular 3D power cells checked against enumerated cutting planes.
+// The reference shares Voro++'s low-level polyhedron clipper but bypasses
+// its radius arithmetic, cell computation and block pruning.
 #include <voro++.hh>
 #include <algorithm>
 #include <cmath>

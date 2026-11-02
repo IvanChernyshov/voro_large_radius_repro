@@ -1,5 +1,5 @@
-// Scope-only native Voro++ dev diagnostic: dedicated triclinic power cells.
-// Every test case runs in its own process to isolate VOROPP_INTERNAL_ERROR.
+// Dedicated triclinic cell-volume comparisons for Voro++ dev.
+// Each scenario runs separately so any native error is recorded.
 #include <voro++.hh>
 #include <algorithm>
 #include <cmath>
