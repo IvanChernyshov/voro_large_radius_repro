@@ -1,6 +1,5 @@
-// Focused numerical probes of the original 2D radius_poly implementation.
-// Return 1 for detected numerical failures. These are intentional diagnostics,
-// not acceptance tests of the as-yet unmodified Voro++ algorithm.
+// A1-A3: direct 2D radius_poly arithmetic and two-site geometry checks on dev.
+// Return 1 for numerical mismatches, 2 for an invalid test reference.
 #include <voro++.hh>
 #include <algorithm>
 #include <cmath>

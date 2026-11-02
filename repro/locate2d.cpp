@@ -1,5 +1,5 @@
 // Stage 2 (A4/A5): 2D analytic-owner regressions for find_voronoi_cell.
-// Uses the original Voro++ C++ API, without Python or a second geometry engine.
+// The expected owner comes from the analytical two-site power bisector.
 #include <voro++_2d.hh>
 #include <cmath>
 #include <cstdlib>
