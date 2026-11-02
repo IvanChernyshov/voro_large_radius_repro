@@ -71,9 +71,7 @@ The exact GitHub-committed test sources were executed in [workflow run 413165754
 
 All moderate-radius positive controls passed, and the independently checked reference volumes and image-range convergence were valid. Each 2D fraction has denominator 384 configurations and each 3D fraction denominator 960 configurations, per profile and platform.
 
-The precise **number of erroneous 3D configurations varies slightly with compiler and platform**. They are observed counts for this matrix, not a fixed failure rate. The candidate-02 result is the stricter check: any mismatch fails that profile.
-
-The original and candidate-01 jobs retain the numerical discrepancies as diagnostic results. The candidate-02 job requires all cases to match.
+The number of incorrect 3D configurations varies slightly by compiler. Baseline and candidate-01 mismatches are recorded for comparison; every candidate-02 A9 case must match the reference.
 
 ## How to run and interpret
 

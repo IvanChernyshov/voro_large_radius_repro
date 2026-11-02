@@ -71,7 +71,7 @@ MSVC executes the same source with the appropriate dimension macro. These scalar
 
 ## Cross-platform CI confirmation
 
-[GitHub Actions run 41328535563](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41328535563) tested commit `82fdfd79c1fb3bf0d2412d480f0076a3603c01b7`. At the time of this record, The results below cover five source profiles on Linux GCC, Linux Clang, macOS Clang and Windows x64 MSVC, all completed successfully. The later full cross-platform CI matrix, including macOS ARM64, is linked in the [README](../README.md).
+[GitHub Actions run 41328535563](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41328535563) tested commit `82fdfd79c1fb3bf0d2412d480f0076a3603c01b7`. The reported results cover five source profiles on Linux GCC, Linux Clang, macOS Clang and Windows x64 MSVC, all completed successfully. The later full cross-platform CI matrix, including macOS ARM64, is linked in the [README](../README.md).
 
 In all four completed toolchain configurations the added 2D and 3D scalar diagnostic **compiled and executed**, printing `SUMMARY radius_poly dim=2 category=scope-only no_acceptance_claim=1` and the corresponding 3D line. Detailed probe values are retained as `2d_pruning_scope.txt` and `3d_pruning_scope.txt` within each profile's CI output artifacts.
 

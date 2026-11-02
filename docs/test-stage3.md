@@ -45,7 +45,7 @@ Both integrated source profiles were tested locally with GCC `-O2` and Clang `-O
 
 Every original failure in this matrix occurs with equal radii `10⁸`; the small-radius and ordinary cases pass. For the original, the 2D failures involve 1-, 2- or 3-site partially/fully periodic diagrams and 2-/3-site bounded diagrams. The 3D failures occur in the analogous rectangular masks **and** in the orthogonal and skew dedicated periodic containers. The exact failure count is specific to this deterministic input matrix, not a probability estimate or a universal scale threshold.
 
-The existing `candidate-01` only changes `r_scale()`. Its success on this equal-radius construction matrix leaves the adjacent-radius and owner-search errors found in [Stages 1–2](test-stage1.md) unchanged.
+The existing `candidate-01` only changes `r_scale()`. Its success on this equal-radius construction matrix leaves the adjacent-radius error ([Stage 1](test-stage1.md)) and owner-search errors ([Stage 2](test-stage2.md)) unchanged.
 
 ## Run and outputs
 

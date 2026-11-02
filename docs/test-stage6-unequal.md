@@ -71,7 +71,7 @@ The test files committed to GitHub match the locally compiled sources by Git blo
 | macOS Clang `-O2` | 72 / 188 | 72 / 180 | **0 / 0** | All pass |
 | Windows x64 MSVC `/O2` | 72 / 188 | 72 / 180 | **0 / 0** | All pass |
 
-Each completed job executed 168 native A8 cases in 2D and 420 in 3D, in addition to the existing A1–A7 suite. The original and candidate-01 profiles record the mismatches as diagnostic results; candidate-02 requires all A8 checks to pass. Candidate-02 requires every A8 case to pass.
+Each completed job executed 168 native A8 cases in 2D and 420 in 3D, in addition to the existing A1–A7 suite. The original and candidate-01 profiles record mismatches for diagnosis; candidate-02 requires all A8 cases to pass.
 
 Counts refer to the tested 168 2D and 420 3D configurations, not to a statistical failure rate.
 

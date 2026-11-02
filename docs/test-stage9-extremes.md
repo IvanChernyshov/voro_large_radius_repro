@@ -55,7 +55,7 @@ For profiles that repair construction, the three smaller exponents are **require
 
 ## Independent GitHub Actions confirmation
 
-[Stage 9 workflow run 41322933837](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41322933837) on `34b8d81abfc9dda0d998aa1871bca1fa2a0e9955`: The original CI table covers four completed platform profiles. The combined-patch tests subsequently covered macOS ARM64 as well; see [Stage 10](test-stage10-combined.md).
+[Stage 9 workflow run 41322933837](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41322933837) on `34b8d81abfc9dda0d998aa1871bca1fa2a0e9955`. The results below cover four completed platform profiles; the later combined-patch tests also cover macOS ARM64 ([Stage 10](test-stage10-combined.md)).
 
 In every completed `candidate-03` job, A11 reports **zero mismatches in 20,958 accepted nonnegative-radius 2D comparisons and 58,296 accepted 3D comparisons**. A11 also reports **zero wrong outside-domain remappings**. Negative-radius diagnostic mismatch counts differ slightly by compiler (e.g. GCC: 1,188 / 6,300 in 2D and 3,192 / 16,968 in 3D; Windows MSVC and Linux Clang: 1,184 and 3,176), so the particular count is not an invariant.
 
