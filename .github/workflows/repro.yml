@@ -109,6 +109,9 @@ jobs:
       - name: Isolate ordinary- and large-radius triclinic cell outcomes
         shell: bash
         run: bash ./scripts/probe-dev-triclinic.sh
+      - name: Trace offending image-block indices on original dev
+        shell: bash
+        run: bash ./scripts/probe-dev-triclinic-index.sh
       - name: Preserve per-case baseline and patched diagnostic logs
         if: always()
         uses: actions/upload-artifact@v4
