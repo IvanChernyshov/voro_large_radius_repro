@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Standalone Voro++ native reproduction. No Python, no source edits in vendor/voro.
+# Pinned Voro++ master reproduction and regression runner.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="${1:-baseline}"
@@ -37,13 +37,11 @@ BUILD="$ROOT/build/$MODE"
 OUTPUT="$ROOT/output/$MODE"
 mkdir -p "$BUILD" "$OUTPUT"
 echo "mode=$MODE compiler=$CXX flags=$CXXFLAGS"
-# Compile each native Voro++ translation unit once, then link each harness.
-# This keeps the growing regression suite fast without changing the source.
+# Compile each translation unit once and link the regression programs.
 "$CXX" $CXXFLAGS -I"$VORO/2d/src" -c "$VORO/2d/src/voro++_2d.cc" -o "$BUILD/voro2d.o"
 "$CXX" $CXXFLAGS -I"$VORO/src" -c "$VORO/src/voro++.cc" -o "$BUILD/voro3d.o"
-# The minimal suite deliberately expects both original failures, not merely a
-# nonzero process status. It rejects crashes, missing output, changed results,
-# and regressions in the combined candidate.
+# Minimal tests assert the precise original failures and the combined correction.
+# A crash or unexpected output fails the check.
 if [[ "$SUITE" == minimal ]]; then
   expected=FAIL
   expected_rc=1
@@ -107,9 +105,8 @@ fi
 echo "Required checks failed: $violations"
 if [[ "$violations" != 0 ]]; then exit 1; fi
 
-# Focused arithmetic regression probes (A1-A3). In this research phase their
-# failures are observed evidence, not a reason to mark the workflow successful
-# results as geometrically correct. A program error / invalid oracle remains fatal.
+# A1-A3: plane arithmetic and analytical two-site references.
+# Baseline discrepancies are recorded; invalid references are fatal.
 for dim in 2 3; do
   if [[ "$dim" == 2 ]]; then
     VORO_INC="$VORO/2d/src"
@@ -134,8 +131,7 @@ for dim in 2 3; do
     echo "Arithmetic probe ${dim}D: numerical differences recorded (informational)."
   fi
 done
-# Stage 2: owner-query probes A4/A5. Known numerical failures are evidence,
-# but failures of the standard and small-radius controls are fatal (exit 2).
+# A4-A5: analytical owner queries; ordinary-radius controls must pass.
 for dim in 2 3; do
   if [[ "$dim" == 2 ]]; then
     VORO_INC="$VORO/2d/src"
@@ -161,9 +157,7 @@ for dim in 2 3; do
     echo "Locate ${dim}D: numerical failures recorded in $logfile (informational)."
   fi
 done
-# Stage 3 A6-A7: rectangular periodic flags and orthogonal/skew periodic cells.
-# Strong small-radius and ordinary Voronoi controls; large-radius disagreements
-# in the original source are expected diagnostic evidence.
+# A6-A7: rectangular and dedicated periodic cells, with ordinary-radius controls.
 for dim in 2 3; do
   if [[ "$dim" == 2 ]]; then
     VORO_INC="$VORO/2d/src"
@@ -294,9 +288,8 @@ for dim in 2 3; do
   fi
 done
 
-# Stage 11: scope-only numerical observations for r_ctest / r_prime / r_cutoff.
-# These probes describe arithmetic limits, including excluded input regimes.
-# They NEVER change the candidate acceptance result, even on a mismatch.
+# Stage 11: scalar r_ctest/r_prime/r_cutoff diagnostics.
+# Their results are logged separately from geometric acceptance gates.
 for dim in 2 3; do
   if [[ "$dim" == 2 ]]; then
     VORO_INC="$VORO/2d/src"

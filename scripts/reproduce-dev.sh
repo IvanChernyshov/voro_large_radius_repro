@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compare native dev baseline and isolated combined correction.
+# Minimal dev reproductions for cell construction and owner search.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "Voro++ dev: four native failure reproductions, followed by four corrected checks"

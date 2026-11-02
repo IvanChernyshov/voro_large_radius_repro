@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Fast, standalone native reproduction of both radical Voronoi failures.
-# Delegates build and patch application to run.sh (no duplicate build logic).
+# Minimal master reproductions for cell construction and owner search.
+# Uses run.sh for isolated baseline and combined-patch builds.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "Voro++ large-radius reproduction — pinned original vs combined correction"

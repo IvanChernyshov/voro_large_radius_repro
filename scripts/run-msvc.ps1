@@ -1,4 +1,4 @@
-# Standalone MSVC harness for the pinned Voro++ reproduction study.
+# Native Voro++ master reproductions and regressions under MSVC.
 # Requires a Visual Studio Developer Command Prompt / Developer PowerShell.
 param(
     [ValidateSet("baseline","candidate","candidate-02","candidate-03","combined-02-03")][string]$Mode="baseline",
@@ -226,7 +226,7 @@ try {
             throw "A12 $($Dim)D required geometry failure, exit $Code"
         }
     }
-    # Stage 11. Optional, scope-only scalar diagnostics: NOT a pass/fail gate.
+    # Stage 11: scalar arithmetic diagnostics, separate from geometry acceptance.
     foreach($Dim in @(2,3)) {
         $Name="radius_bounds$($Dim)d"
         $Source=Join-Path $Root "repro/radius_bounds.cpp"
@@ -245,7 +245,7 @@ try {
             Write-Warning "Scope-only $($Dim)D probe was unavailable: $_"
         }
     }
-    Write-Host "MSVC run completed. Diagnostic failures are NOT accepted geometry."
+    Write-Host "MSVC regression run completed; baseline discrepancies were recorded separately."
     }
 } finally {
     if($null -ne $TempRoot -and (Test-Path -LiteralPath $TempRoot)) {
