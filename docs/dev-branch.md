@@ -58,7 +58,7 @@ For the corrected dev source, the C++11 adapted drivers preserve the same select
 | A1–A3, equal and adjacent binary64 radii, cut-plane geometry and scalar cutoff decision | Known failures in 2D and 3D | **All pass** |
 | A10, irregular nine-site `find_voronoi_cell` with periodic-image coordinates | Wrong answers in both dimensions | **0 / 36,288 (2D); 0 / 38,880 (3D)** |
 | A9, irregular nine-site `compute_cell`, all four 2D rectangular periodic masks | 232/384 failing configurations on GCC/Clang | **0 / 384** |
-| A9, irregular nine-site `compute_cell`, all eight 3D rectangular periodic masks | 512/768 failing configurations on GCC/Clang | **0 / 768** |
+| A9, irregular nine-site `compute_cell`, eight rectangular plus two dedicated periodic 3D modes | 644/960 failing configurations on Linux GCC (including 512/768 rectangular) | **0 / 960 on Linux GCC** |
 
 The original A10 error counts vary with compiler (for example Linux GCC: 985 wrong in 2D and 871 in 3D; Linux Clang: 1181 and 878), as they do in the separately checked master version. Those counts are diagnostic, not expected universal constants. Ordinary-radius and oracle-validity controls passed.
 
@@ -114,9 +114,17 @@ geometric acceptance results.
 This is positive evidence that the radius correction also works in
 **dedicated triclinic cell construction**, for the 40 explicitly tested
 configurations. The larger nine-site A9 sweep was initially excluded
-only because its dedicated branch used the same unsafe `!= end()`
-iteration pattern; corrected A9 coverage is being assessed separately.
-The A10 **triclinic owner-query** path already passes independently.
+because its dedicated branch used the same unsafe `!= end()`
+iteration pattern. After capturing only primary-domain records, the
+[diagnostic CI run 41401452701](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41401452701)
+on Linux GCC reports **644/960 geometry failures on the unmodified dev**
+and **0/960 on the combined patch**, with zero ordinary-radius control
+failures. The 960 cases include 768 rectangular and **192 dedicated
+orthogonal/skew periodic configurations**. The corrected A9 now runs by
+default in the extended dev regression; `VORO_DEV_A9_RECT_ONLY=1` is
+available solely to isolate the rectangular subset. The full CI
+cross-platform acceptance gate was added after the initial Linux GCC
+diagnostic. The A10 **triclinic owner-query** path passes independently.
 
 ## 5. Multithreading check
 
@@ -139,7 +147,7 @@ On Linux/macOS with a C++11 compiler and Bash:
 # Strict minimal reference: 4 baseline native failures, 4 corrected passes.
 bash scripts/reproduce-dev.sh
 
-# Includes A1–A3, A9 rectangular construction and A10 owner-query tests.
+# Includes A1–A3, A9 rectangular + dedicated triclinic construction and A10 owner tests.
 bash scripts/reproduce-dev.sh extended
 
 # Threaded exercise of a temporary patched dev source copy.

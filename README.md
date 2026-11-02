@@ -159,7 +159,7 @@ tested periodic-image ranges and do not certify every lattice.
 | A9, irregular-site construction (`master`) | 1,344/1,344 |
 | A10, accelerated owner queries (`master`) | 75,168/75,168 |
 | A11–A12, selected nonnegative / extreme cases (`master`) | Pass within documented acceptance scope |
-| A9, 2D and 3D rectangular construction (`dev`) | 384/384 and 768/768 |
+| A9, 2D rectangular / 3D rectangular + dedicated triclinic (`dev`) | 384/384 and 960/960 on Linux GCC |
 | A10, 2D and 3D owner queries (`dev`, including triclinic owner search) | 36,288/36,288 and 38,880/38,880 |
 | Dedicated triclinic 3D cell construction (`dev`, isolated primary-site probe) | 40/40 corrected; original 24/40 |
 | OpenMP concurrency (`dev`, four threads) | No mismatches in 2D/3D cell and owner checks |
@@ -199,8 +199,9 @@ a formal correctness guarantee for all input geometries.
   accidentally traversed generated image blocks and produced
   unrelated internal index errors. The corrected test captures only
   primary-site indices before computing cells. This finite test is
-  **not** a universal triclinic correctness guarantee.
-  See [`docs/dev-branch.md`](docs/dev-branch.md).
+  **not** a universal triclinic correctness guarantee. The corrected
+  nine-site A9 also passes 960/960 configurations on Linux GCC, including
+  192 dedicated periodic cases. See [`docs/dev-branch.md`](docs/dev-branch.md).
 
 ## Repository layout and provenance
 

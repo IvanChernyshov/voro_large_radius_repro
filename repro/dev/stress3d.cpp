@@ -177,10 +177,10 @@ int main(){
     std::cout<<std::setprecision(17);Stat stat;
     for(int seed=0;seed<4;++seed)for(int pattern=0;pattern<6;++pattern){
         const std::vector<Site> ss=sites(seed,pattern);
-        // The dev-only dedicated triclinic compute_cell route may abort with
-        // VOROPP_INTERNAL_ERROR even for ordinary radii in this stress setup.
-        // Keep it available for isolated diagnostics, not acceptance.
-        const int masks=std::getenv("VORO_DEV_A9_TRICLINIC")?10:8;
+        // Both rectangular and dedicated triclinic construction are included.
+        // Primary-site records are captured before periodic image generation.
+        // A rectangular-only diagnostic can be requested explicitly.
+        const int masks=std::getenv("VORO_DEV_A9_RECT_ONLY")?8:10;
         for(int mask=0;mask<masks;++mask)run(ss,seed,pattern,mask,stat);
     }
     std::cout<<"SUMMARY A9 dim=3 cases="<<stat.configurations<<" failures="<<stat.failures<<" controls="<<stat.controls<<"\n";

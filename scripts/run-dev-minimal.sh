@@ -67,6 +67,15 @@ if [[ "$SUITE" == extended ]]; then
       rc=0
       "$exe" > "$logfile" 2>&1 || rc=$?
       grep -E "^SUMMARY (A10|A9|dimension=)" "$logfile" || true
+      if [[ "$stem" == stress ]]; then
+        expected_cases=384
+        if [[ "$dim" == 3 ]]; then expected_cases=960; fi
+        if ! grep -Eq "^SUMMARY A9 dim=${dim} cases=${expected_cases} failures=[0-9]+ controls=0$" "$logfile"; then
+          echo "dev $MODE ${dim}D: missing expected full A9 matrix or ordinary-radius control failure" >&2
+          grep -E "^(ORACLE_|SUMMARY A9)" "$logfile" | head -20 >&2 || true
+          exit 1
+        fi
+      fi
       if [[ "$rc" -gt 1 ]] || [[ "$MODE" == combined && "$rc" -ne 0 ]]; then
         echo "dev $MODE ${dim}D $stem: control/oracle/candidate regression (exit $rc)." >&2
         if [[ "$rc" -gt 1 ]]; then
