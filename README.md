@@ -1,5 +1,7 @@
 # Numerical cancellation in Voro++ radical tessellations
 
+**Related issue:** [Voro++ #46](https://github.com/chr1shr/voro/issues/46)
+
 While adding weight-based power-diagram calculations to pyvoro2, we found that
 Voro++ can produce incorrect cells and nearest-power-site queries when the
 radii are large compared with the site separations. This repository isolates
