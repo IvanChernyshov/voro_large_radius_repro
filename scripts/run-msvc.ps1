@@ -245,7 +245,7 @@ try {
             Write-Warning "Scope-only $($Dim)D probe was unavailable: $_"
         }
     }
-    Write-Host "MSVC regression run completed; baseline discrepancies were recorded separately."
+    Write-Host "MSVC native regression profile completed."
     }
 } finally {
     if($null -ne $TempRoot -and (Test-Path -LiteralPath $TempRoot)) {

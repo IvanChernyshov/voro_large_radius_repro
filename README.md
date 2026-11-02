@@ -180,10 +180,6 @@ rather than all representable radii and geometries. In particular:
   [pruning arithmetic probes](docs/test-stage11-pruning-scope.md)
   distinguish scalar rounding effects from demonstrated cell failures.
 
-These limits are recorded alongside the successful tests, without
-assuming that every finite input should have the same numerical
-guarantees.
-
 ## Sources and repository files
 
 The `vendor/voro/` and `vendor/voro-dev/` directories preserve exact,

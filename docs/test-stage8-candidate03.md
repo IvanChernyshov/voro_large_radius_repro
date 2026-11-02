@@ -78,7 +78,7 @@ Returned `found`, site ID and shifted image coordinates are verified. Small-radi
 
 The locally compiled source has matching original Git blob IDs for `rad_option.hh` (2D/3D), `voro++.cc`, `voro++_2d.cc`, and the native compute implementations. GCC `-O2 -std=c++11` and Clang `-O3 -std=c++11` reproduced the errors on baseline and passed the new search patch in both dimensions.
 
-**Authoritative GitHub Actions evidence:** [workflow run 41319325489](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41319325489), source commit `d7a9b7b1292e152dde727d092069d24789258dce`.
+GitHub Actions: [workflow run 41319325489](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41319325489), source commit `d7a9b7b1292e152dde727d092069d24789258dce`.
 
 | CI toolchain | Baseline A10 wrong 2D / 3D | Candidate-03 A10 wrong 2D / 3D | Candidate-03 A4–A5 wrong 2D / 3D |
 |---|---:|---:|---:|

@@ -1,4 +1,4 @@
-# Stage 11 — Scope-only audit of radial pruning arithmetic
+# Stage 11 — radial pruning arithmetic at floating-point limits
 
 This stage examines scalar rounding and overflow in the remaining radial pruning operations, following the combined-patch tests. Its numerical probes are kept separate from the cell and owner-search acceptance matrices.
 
