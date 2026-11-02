@@ -99,6 +99,24 @@ jobs:
           path: output/dev-openmp/openmp.txt
           if-no-files-found: warn
 
+
+  dev-triclinic-diagnostic:
+    name: "Dev dedicated triclinic cell / diagnostic only (Linux GCC)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Isolate ordinary- and large-radius triclinic cell outcomes
+        shell: bash
+        run: bash ./scripts/probe-dev-triclinic.sh
+      - name: Preserve per-case baseline and patched diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-triclinic-diagnostic-linux-gcc
+          path: output/dev-triclinic/
+          if-no-files-found: warn
+
   reproduce:
     name: "${{ matrix.platform.tag }} / ${{ matrix.profile }}"
     runs-on: ${{ matrix.platform.os }}
