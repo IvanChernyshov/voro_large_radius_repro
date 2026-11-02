@@ -72,15 +72,15 @@ jobs:
           $CXX --version
           if [[ "${{ matrix.platform.tag }}" == macos-arm64-* ]]; then test "$(uname -m)" == arm64; fi
           if [[ "${{ matrix.platform.tag }}" == macos-intel-* ]]; then test "$(uname -m)" == x86_64; fi
-          bash ./scripts/reproduce-dev.sh
+          bash ./scripts/reproduce-dev.sh extended
       - name: Save dev branch baseline measurements
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dev-baseline-and-correction-${{ matrix.platform.tag }}
           path: |
-            output/dev-baseline/*_minimal.txt
-            output/dev-combined/*_minimal.txt
+            output/dev-baseline/*.txt
+            output/dev-combined/*.txt
           if-no-files-found: warn
 
   reproduce:

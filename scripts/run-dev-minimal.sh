@@ -3,8 +3,12 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODE="${1:-baseline}"
+SUITE="${2:-minimal}"
+if [[ "$SUITE" != minimal && "$SUITE" != extended ]]; then
+  echo "Expected suite: minimal or extended" >&2; exit 2
+fi
 if [[ "$MODE" != baseline && "$MODE" != combined ]]; then
-  echo "Usage: bash scripts/run-dev-minimal.sh [baseline|combined]" >&2
+  echo "Usage: bash scripts/run-dev-minimal.sh [baseline|combined] [minimal|extended]" >&2
   exit 2
 fi
 ORIGINAL="$ROOT/vendor/voro-dev"
@@ -52,4 +56,27 @@ for dim in 2 3; do
     exit 1
   fi
 done
+end_of_minimal=1
+if [[ "$SUITE" == extended ]]; then
+  for dim in 2 3; do
+    for stem in arithmetic owner; do
+      src="$ROOT/repro/dev/${stem}${dim}d.cpp"
+      exe="$BUILD/${stem}${dim}d"
+      logfile="$OUTPUT/${dim}d_${stem}.txt"
+      "$CXX" $CXXFLAGS -pthread -I"$VORO/src" "$src" "$BUILD/voro-dev.o" -o "$exe"
+      rc=0
+      "$exe" > "$logfile" 2>&1 || rc=$?
+      grep -E "^SUMMARY (A10|dimension=)" "$logfile" || true
+      if [[ "$rc" -gt 1 ]] || [[ "$MODE" == combined && "$rc" -ne 0 ]]; then
+        echo "dev $MODE ${dim}D $stem: control/oracle/candidate regression (exit $rc)." >&2
+        grep -E "^(CASE |WRONG |ORACLE_|SUMMARY )" "$logfile" | head -45 >&2 || true
+        exit 1
+      fi
+      if [[ "$rc" == 1 ]]; then
+        echo "dev $MODE ${dim}D $stem: known baseline discrepancy recorded."
+      fi
+    done
+  done
+  echo "SUMMARY dev-extended mode=$MODE status=PASS geometry_and_owner_corrected=$([[ "$MODE" == combined ]] && echo yes || echo baseline-diagnostic)"
+fi
 echo "SUMMARY dev-minimal mode=$MODE status=PASS expected_native_result=$expected"
