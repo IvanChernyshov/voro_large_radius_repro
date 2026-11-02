@@ -144,6 +144,7 @@ void run(const std::vector<Site>& ss,int seed,int pattern,int mask,Stat& stat){
     }
     if(std::fabs(total-1000.)>5e-4L){std::cerr<<"ORACLE_BAD_VOLUME dim=3 seed="<<seed<<" pattern="<<pattern<<" mask="<<mask<<" total="<<double(total)<<"\n";std::exit(2);}
     for(int blocks=1;blocks<=3;blocks+=2)for(int reverse=0;reverse<2;++reverse){
+        if(mask>=8) std::cerr<<"A9_PERIODIC_TRACE seed="<<seed<<" pattern="<<pattern<<" mask="<<mask<<" blocks="<<blocks<<" reverse="<<reverse<<"\n";
         const std::vector<Shape> got=actual(ss,mask,blocks,reverse!=0);
         bool pass=true;int bad=0;double maxerr=0,sum=0;
         for(size_t i=0;i<ss.size();++i){
