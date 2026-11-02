@@ -80,6 +80,39 @@ As a result, A9 dev acceptance intentionally covers **2D 384 and 3D 768 rectangu
 
 Do not report the dev patch as having passed a dedicated triclinic **cell-construction** test.
 
+### Isolated dedicated-cell diagnostic (2 November 2026)
+
+A further read-only comparison of the **original** and **combined-patched** dev sources is archived by
+[CI run 41397139610](https://github.com/IvanChernyshov/voro_large_radius_repro/actions/runs/41397139610)
+(commit `5bbe039`). The standalone `repro/dev/triclinic_probe.cpp` and
+`scripts/probe-dev-triclinic.sh` execute each case in its own process, so a native
+fatal error cannot hide later cases. Five scenarios (one ordinary-radius site;
+two ordinary-radius sites; two equal large radii; two neighboring binary64 radii;
+and the original nine-site ordinary-radius configuration) are crossed with
+orthogonal/skew dedicated lattices, block grids `1`/`3` and insertion orders.
+
+| Variant | Correct dedicated `compute_cell` cases | Same internal image-index error | Unexpected exits |
+|---|---:|---:|---:|
+| Unmodified dev | 0/40 | 40/40 | 0 |
+| Combined-patched dev | 0/40 | 40/40 | 0 |
+
+Every failing case reports `VOROPP_INTERNAL_ERROR` (native exit status 3):
+`Constructing periodic image for nonexistent point`. Crucially, **even a
+single site with a small radius fails** in this specific diagnostic setup.
+These observations establish that the numerical patch is not needed to
+trigger the native error. They do **not** establish the underlying cause,
+the correctness of the test setup under every dev API convention, or that
+all possible triclinic inputs fail. Zero geometry mismatches in this
+diagnostic means **zero completed geometry comparisons**, not forty
+successful comparisons.
+
+This job is explicitly **diagnostic-only**, not part of the numerical
+acceptance claim. The combined patch continues to pass the dedicated
+triclinic **owner-query** cases within A10; it has **not** been validated
+for dedicated triclinic **cell construction**. Further analysis of the
+independent failure, if undertaken, must keep this distinction explicit.
+
+
 ## 5. Multithreading check
 
 The dev combined patch retains per-call local radius state. An additional `-fopenmp` Ubuntu GCC test, `repro/dev/thread_safety.cpp`, exercised **four active OpenMP threads** and compared concurrent operations with sequential reference calculations on the same containers:
